@@ -4,11 +4,14 @@ import json
 import traceback
 
 import objc
+from AppKit import NSBezierPath, NSColor, NSMenuItem, NSOffState, NSOnState
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
-from GlyphsApp import DOCUMENTEXPORTED, Glyphs, Message
+from GlyphsApp import DOCUMENTEXPORTED, DRAWBACKGROUND, VIEW_MENU, Glyphs, Message
 from GlyphsApp.plugins import GeneralPlugin
+
+PLUGIN_ID = "com.nagwa.MATHPlugin"
 
 CONSTANT_INTEGERS = [
     "ScriptPercentScaleDown",
@@ -85,16 +88,86 @@ class MATHPlugin(GeneralPlugin):
 
     @objc.python_method
     def start(self):
+        self.defaults = Glyphs.defaults
+
         Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
+        Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
+
+        menuItem = NSMenuItem.new()
+        menuItem.setTitle_("Show MATH italic correction")
+        menuItem.setAction_(self.toggleShowIC_)
+        menuItem.setTarget_(self)
+        state = self.defaults.get(f"{PLUGIN_ID}.{menuItem.identifier()}", NSOnState)
+        self.setMenuItemState_(menuItem, state)
+        Glyphs.menu[VIEW_MENU].append(menuItem)
+
+        menuItem = NSMenuItem.new()
+        menuItem.setTitle_("Show MATH top accent position")
+        menuItem.setAction_(self.toggleShowTA_)
+        menuItem.setTarget_(self)
+        state = self.defaults.get(f"{PLUGIN_ID}.{menuItem.identifier()}", NSOnState)
+        self.setMenuItemState_(menuItem, state)
+        Glyphs.menu[VIEW_MENU].append(menuItem)
 
     @objc.python_method
     def __del__(self):
         Glyphs.removeCallback(self.export_)
+        Glyphs.removeCallback(self.draw_)
 
     @objc.python_method
     def __file__(self):
         """Please leave this method unchanged"""
         return __file__
+
+    def validateMenuItem_(self, menuItem):
+        return Glyphs.font is not None and Glyphs.font.selectedLayers
+
+    @objc.python_method
+    def setMenuItemState_(self, menuItem, state):
+        self.defaults[f"{PLUGIN_ID}.{menuItem.identifier()}"] = state
+        menuItem.setState_(state)
+
+    def toggleShowIC_(self, menuItem):
+        newState = NSOnState
+        state = menuItem.state()
+        if state == NSOnState:
+            newState = NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
+    def toggleShowTA_(self, menuItem):
+        newState = NSOnState
+        state = menuItem.state()
+        if state == NSOnState:
+            newState = NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
+    @objc.python_method
+    def draw_(self, layer, options):
+        try:
+            names = []
+            if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
+                names.append(ITALIC_CORRECTION_ANCHOR)
+            if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
+                names.append(TOP_ACCENT_ANCHOR)
+
+            master = layer.master
+            scale = 1.2 * options["Scale"]
+            for anchor in layer.anchors:
+                if anchor.name in names:
+                    line = NSBezierPath.bezierPath()
+                    line.moveToPoint_((anchor.position.x, master.descender))
+                    line.lineToPoint_((anchor.position.x, master.ascender))
+                    line.setLineWidth_(scale)
+                    if anchor.name == ITALIC_CORRECTION_ANCHOR:
+                        NSColor.blueColor().set()
+                    elif anchor.name == TOP_ACCENT_ANCHOR:
+                        NSColor.magentaColor().set()
+                    line.stroke()
+
+        except:
+            Message(f"Drawing anchors failed:\n{traceback.format_exc()}", self.name)
 
     @objc.python_method
     def export_(self, notification):
