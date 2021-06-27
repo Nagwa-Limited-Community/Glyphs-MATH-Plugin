@@ -1,31 +1,37 @@
 # Copyright 2021 Nagwa Limited
 
-import json
 import traceback
 
 import objc
+import vanilla
 from AppKit import NSBezierPath, NSColor, NSMenuItem, NSOffState, NSOnState
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
-from GlyphsApp import DOCUMENTEXPORTED, DRAWBACKGROUND, VIEW_MENU, Glyphs, Message
+from GlyphsApp import (
+    DOCUMENTEXPORTED,
+    DRAWBACKGROUND,
+    EDIT_MENU,
+    VIEW_MENU,
+    Glyphs,
+    Message,
+)
 from GlyphsApp.plugins import GeneralPlugin
 
 PLUGIN_ID = "com.nagwa.MATHPlugin"
 
-CONSTANT_INTEGERS = [
+MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
     "ScriptScriptPercentScaleDown",
     "DelimitedSubFormulaMinHeight",
     "DisplayOperatorMinHeight",
-    "RadicalDegreeBottomRaisePercent",
-]
-
-CONSTANT_VALUERECORDS = [
     "MathLeading",
     "AxisHeight",
     "AccentBaseHeight",
     "FlattenedAccentBaseHeight",
+]
+
+MATH_CONSTANTS_SCRIPTS = [
     "SubscriptShiftDown",
     "SubscriptTopMax",
     "SubscriptBaselineDropMin",
@@ -36,10 +42,16 @@ CONSTANT_VALUERECORDS = [
     "SubSuperscriptGapMin",
     "SuperscriptBottomMaxWithSubscript",
     "SpaceAfterScript",
+]
+
+MATH_CONSTANTS_LIMITS = [
     "UpperLimitGapMin",
     "UpperLimitBaselineRiseMin",
     "LowerLimitGapMin",
     "LowerLimitBaselineDropMin",
+]
+
+MATH_CONSTANTS_STACKS = [
     "StackTopShiftUp",
     "StackTopDisplayStyleShiftUp",
     "StackBottomShiftDown",
@@ -50,6 +62,9 @@ CONSTANT_VALUERECORDS = [
     "StretchStackBottomShiftDown",
     "StretchStackGapAboveMin",
     "StretchStackGapBelowMin",
+]
+
+MATH_CONSTANTS_FRACTIONS = [
     "FractionNumeratorShiftUp",
     "FractionNumeratorDisplayStyleShiftUp",
     "FractionDenominatorShiftDown",
@@ -61,21 +76,44 @@ CONSTANT_VALUERECORDS = [
     "FractionDenomDisplayStyleGapMin",
     "SkewedFractionHorizontalGap",
     "SkewedFractionVerticalGap",
+]
+
+MATH_CONSTANTS_BARS = [
     "OverbarVerticalGap",
     "OverbarRuleThickness",
     "OverbarExtraAscender",
     "UnderbarVerticalGap",
     "UnderbarRuleThickness",
     "UnderbarExtraDescender",
+]
+
+MATH_CONSTANTS_RADICALS = [
     "RadicalVerticalGap",
     "RadicalDisplayStyleVerticalGap",
     "RadicalRuleThickness",
     "RadicalExtraAscender",
     "RadicalKernBeforeDegree",
     "RadicalKernAfterDegree",
+    "RadicalDegreeBottomRaisePercent",
 ]
 
-MATH_CONSTANTS = CONSTANT_INTEGERS + CONSTANT_VALUERECORDS
+CONSTANT_INTEGERS = [
+    "ScriptPercentScaleDown",
+    "ScriptScriptPercentScaleDown",
+    "DelimitedSubFormulaMinHeight",
+    "DisplayOperatorMinHeight",
+    "RadicalDegreeBottomRaisePercent",
+]
+
+MATH_CONSTANTS = (
+    MATH_CONSTANTS_GENERAL
+    + MATH_CONSTANTS_SCRIPTS
+    + MATH_CONSTANTS_LIMITS
+    + MATH_CONSTANTS_STACKS
+    + MATH_CONSTANTS_FRACTIONS
+    + MATH_CONSTANTS_BARS
+    + MATH_CONSTANTS_RADICALS
+)
 
 ITALIC_CORRECTION_ANCHOR = "math.ic"
 TOP_ACCENT_ANCHOR = "math.ta"
@@ -109,6 +147,12 @@ class MATHPlugin(GeneralPlugin):
         self.setMenuItemState_(menuItem, state)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
+        menuItem = NSMenuItem.new()
+        menuItem.setTitle_("Edit MATH constants...")
+        menuItem.setAction_(self.editFont_)
+        menuItem.setTarget_(self)
+        Glyphs.menu[EDIT_MENU].append(menuItem)
+
     @objc.python_method
     def __del__(self):
         Glyphs.removeCallback(self.export_)
@@ -120,6 +164,8 @@ class MATHPlugin(GeneralPlugin):
         return __file__
 
     def validateMenuItem_(self, menuItem):
+        if menuItem.identifier() == "editFont:":
+            return Glyphs.font is not None
         return Glyphs.font is not None and Glyphs.font.selectedLayers
 
     @objc.python_method
@@ -143,6 +189,71 @@ class MATHPlugin(GeneralPlugin):
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
+    def editFont_(self, menuItem):
+        try:
+            master = Glyphs.font.selectedFontMaster
+            if PLUGIN_ID not in master.userData:
+                master.userData[PLUGIN_ID] = {}
+            if "constants" not in master.userData[PLUGIN_ID]:
+                master.userData[PLUGIN_ID]["constants"] = {}
+            data = master.userData[PLUGIN_ID]["constants"]
+
+            width, height = 650, 400
+            border = 10
+            gap = 30
+            window = vanilla.Window((width, height), "MATH Constants")
+            tabs = {
+                "General": MATH_CONSTANTS_GENERAL,
+                "Sub/Superscript": MATH_CONSTANTS_SCRIPTS,
+                "Limits": MATH_CONSTANTS_LIMITS,
+                "Stacks": MATH_CONSTANTS_STACKS,
+                "Fractions": MATH_CONSTANTS_FRACTIONS,
+                "Over/Underbar": MATH_CONSTANTS_BARS,
+                "Radicals": MATH_CONSTANTS_RADICALS,
+            }
+
+            def makeCallback(c):
+                def callback(sender):
+                    # Make a copy, otherwise Glyphs wont mark the font modified.
+                    # https://forum.glyphsapp.com/t/changing-userdata-does-not-always-mark-the-document-modified/19456
+                    data = dict(master.userData[PLUGIN_ID])
+                    constants = dict(data["constants"])
+                    constants[c] = sender.get()
+                    data["constants"] = constants
+                    master.userData[PLUGIN_ID] = data
+
+                return callback
+
+            window.tabs = vanilla.Tabs((border, border, -border, -border), tabs.keys())
+            for i, name in enumerate(tabs.keys()):
+                subwidth = width / 2 - border
+                tab = window.tabs[i]
+                tab.l = vanilla.Box((0, 0, subwidth, 0))
+                tab.r = vanilla.Box((subwidth, 0, subwidth, 0))
+                tab.l.setBorderWidth(0)
+                tab.r.setBorderWidth(0)
+                constants = tabs[name]
+                for j, c in enumerate(constants):
+                    callback = makeCallback(c)
+                    v = data.get(c, 0)
+                    box = vanilla.TextBox(
+                        (0, gap * j + 1, -border, -border), c, alignment="right"
+                    )
+                    edit = vanilla.EditText(
+                        (0, gap * j + 1, 40, 25), v, callback=callback
+                    )
+                    setattr(tab.l, f"{c}Box", box)
+                    setattr(tab.r, f"{c}Edit", edit)
+            window.open()
+        except:
+            Message(f"Setting constancies failed:\n{traceback.format_exc()}", self.name)
+
+    def editGlyph_(self, menuItem):
+        layer = Glyphs.font.selectedLayers[0]
+        data = layer.userData[PLUGIN_ID]
+        if data:
+            print(data)
+
     @objc.python_method
     def draw_(self, layer, options):
         try:
@@ -165,7 +276,6 @@ class MATHPlugin(GeneralPlugin):
                     elif anchor.name == TOP_ACCENT_ANCHOR:
                         NSColor.magentaColor().set()
                     line.stroke()
-
         except:
             Message(f"Drawing anchors failed:\n{traceback.format_exc()}", self.name)
 
@@ -176,41 +286,37 @@ class MATHPlugin(GeneralPlugin):
             instance = info["instance"]
             path = info["fontFilePath"]
 
-            # XXX
-            url = instance.font.parent.fileURL()
-            with open(url.path().replace(".glyphs", ".json")) as fp:
-                data = json.load(fp)
-            # XXX
-
             font = instance.interpolatedFont
             with TTFont(path) as ttFont:
-                self.build_(font, ttFont, data)
+                self.build_(font, ttFont)
                 ttFont.save(path)
         except:
             Message(f"Exporting failed:\n{traceback.format_exc()}", self.name)
 
     @staticmethod
-    def build_(font, ttFont, data):
+    def build_(font, ttFont):
         instance = font.instances[0]
         master = font.masters[0]
+        data = master.userData[PLUGIN_ID]
 
         constants = {}
-        if data and "Parameters" in data:
+        found = False
+        if data and "constants" in data:
             for c in MATH_CONSTANTS:
-                v = data["Parameters"].get(c, None)
+                v = data["constants"].get(c, None)
                 if v is None:
-                    print(f"MATH constant {c} is missing")
                     v = 0
-                if v == "":
-                    print(f"MATH constant {c} is empty")
-                    v = 0
-                v = int(float(v))
-                if c in CONSTANT_VALUERECORDS:
+                else:
+                    found = True
+                v = int(v)
+                if c in CONSTANT_INTEGERS:
+                    constants[c] = v
+                else:
                     record = otTables.MathValueRecord()
                     record.Value = v
                     constants[c] = record
-                else:
-                    constants[c] = v
+
+        constants = constants if found else {}
 
         if (
             font.customParameters["Don't use Production Names"]
