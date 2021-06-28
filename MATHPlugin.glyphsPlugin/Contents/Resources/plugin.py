@@ -131,13 +131,13 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
 
-        menuItem = self.newMenuItem_("Show MATH italic correction", self.toggleShowIC_)
+        menuItem = self.newMenuItem_("Show MATH Italic Correction", self.toggleShowIC_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Show MATH top accent position", self.toggleShowTA_)
+        menuItem = self.newMenuItem_("Show MATH Top Accent Position", self.toggleShowTA_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Edit MATH constants...", self.editFont_, False)
+        menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
         Glyphs.menu[EDIT_MENU].append(menuItem)
 
     @objc.python_method
