@@ -131,26 +131,13 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
 
-        menuItem = NSMenuItem.new()
-        menuItem.setTitle_("Show MATH italic correction")
-        menuItem.setAction_(self.toggleShowIC_)
-        menuItem.setTarget_(self)
-        state = self.defaults.get(f"{PLUGIN_ID}.{menuItem.identifier()}", NSOnState)
-        self.setMenuItemState_(menuItem, state)
+        menuItem = self.newMenuItem_("Show MATH italic correction", self.toggleShowIC_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = NSMenuItem.new()
-        menuItem.setTitle_("Show MATH top accent position")
-        menuItem.setAction_(self.toggleShowTA_)
-        menuItem.setTarget_(self)
-        state = self.defaults.get(f"{PLUGIN_ID}.{menuItem.identifier()}", NSOnState)
-        self.setMenuItemState_(menuItem, state)
+        menuItem = self.newMenuItem_("Show MATH top accent position", self.toggleShowTA_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = NSMenuItem.new()
-        menuItem.setTitle_("Edit MATH constants...")
-        menuItem.setAction_(self.editFont_)
-        menuItem.setTarget_(self)
+        menuItem = self.newMenuItem_("Edit MATH constants...", self.editFont_, False)
         Glyphs.menu[EDIT_MENU].append(menuItem)
 
     @objc.python_method
@@ -169,8 +156,21 @@ class MATHPlugin(GeneralPlugin):
         return Glyphs.font is not None and Glyphs.font.selectedLayers
 
     @objc.python_method
-    def setMenuItemState_(self, menuItem, state):
-        self.defaults[f"{PLUGIN_ID}.{menuItem.identifier()}"] = state
+    def newMenuItem_(self, title, action, setState=True):
+        menuItem = NSMenuItem.new()
+        menuItem.setTitle_(title)
+        menuItem.setAction_(action)
+        menuItem.setTarget_(self)
+        if setState:
+            self.setMenuItemState_(menuItem)
+        return menuItem
+
+    @objc.python_method
+    def setMenuItemState_(self, menuItem, state=None):
+        key = f"{PLUGIN_ID}.{menuItem.identifier()}"
+        if state is None:
+            state = self.defaults.get(key, NSOnState)
+        self.defaults[key] = state
         menuItem.setState_(state)
 
     def toggleShowIC_(self, menuItem):
