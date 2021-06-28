@@ -17,7 +17,7 @@
 	<key>CFBundleVersion</key>
 	<string>1.0.0</string>
 	<key>UpdateFeedURL</key>
-	<string>____OnlineUrlToThisPlist____</string>
+	<string>https://github.com/Nagwa-Limited-Community/Glyphs-MATH-Plugin/blob/main/MATHPlugin.glyphsPlugin/Contents/Info.plist</string>
 	<key>productPageURL</key>
 	<string>https://github.com/Nagwa-Limited-Community/Glyphs-MATH-Plugin</string>
 	<key>productReleaseNotes</key>
