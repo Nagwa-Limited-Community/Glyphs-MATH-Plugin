@@ -4,7 +4,14 @@ import traceback
 
 import objc
 import vanilla
-from AppKit import NSBezierPath, NSColor, NSMenuItem, NSOffState, NSOnState
+from AppKit import (
+    NSBezierPath,
+    NSColor,
+    NSMenuItem,
+    NSNumberFormatter,
+    NSOffState,
+    NSOnState,
+)
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
@@ -97,11 +104,14 @@ MATH_CONSTANTS_RADICALS = [
     "RadicalDegreeBottomRaisePercent",
 ]
 
-CONSTANT_INTEGERS = [
-    "ScriptPercentScaleDown",
-    "ScriptScriptPercentScaleDown",
+CONSTANT_UNSIGNED = [
     "DelimitedSubFormulaMinHeight",
     "DisplayOperatorMinHeight",
+]
+
+CONSTANT_INTEGERS = CONSTANT_UNSIGNED + [
+    "ScriptPercentScaleDown",
+    "ScriptScriptPercentScaleDown",
     "RadicalDegreeBottomRaisePercent",
 ]
 
@@ -219,6 +229,10 @@ class MATHPlugin(GeneralPlugin):
             def makeCallback(c, constants):
                 def callback(sender):
                     value = sender.get()
+                    if value is None:
+                        return
+
+                    value = int(value)
                     if c in constants and constants[c] == value:
                         return
 
@@ -236,6 +250,16 @@ class MATHPlugin(GeneralPlugin):
 
                 return callback
 
+            uformatter = NSNumberFormatter.new()
+            uformatter.setAllowsFloats_(False)
+            uformatter.setMinimum_(0)
+            uformatter.setMaximum_(0xFFFF)
+
+            sformatter = NSNumberFormatter.new()
+            sformatter.setAllowsFloats_(False)
+            sformatter.setMinimum_(-0x7FFF)
+            sformatter.setMaximum_(0x7FFF)
+
             window.tabs = vanilla.Tabs((border, border, -border, -border), tabs.keys())
             for i, name in enumerate(tabs.keys()):
                 subwidth = width / 2 - border
@@ -247,12 +271,17 @@ class MATHPlugin(GeneralPlugin):
                 constants = tabs[name]
                 for j, c in enumerate(constants):
                     callback = makeCallback(c, data)
-                    v = data.get(c, 0)
+                    v = data.get(c, None)
                     box = vanilla.TextBox(
                         (0, gap * j + 1, -border, -border), c, alignment="right"
                     )
+                    formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
                     edit = vanilla.EditText(
-                        (0, gap * j + 1, 40, 25), v, callback=callback
+                        (0, gap * j + 1, 40, 25),
+                        v,
+                        callback=callback,
+                        formatter=formatter,
+                        placeholder="0",
                     )
                     setattr(tab.l, f"{c}Box", box)
                     setattr(tab.r, f"{c}Edit", edit)
