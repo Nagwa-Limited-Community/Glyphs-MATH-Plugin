@@ -134,7 +134,9 @@ class MATHPlugin(GeneralPlugin):
         menuItem = self.newMenuItem_("Show MATH Italic Correction", self.toggleShowIC_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Show MATH Top Accent Position", self.toggleShowTA_)
+        menuItem = self.newMenuItem_(
+            "Show MATH Top Accent Position", self.toggleShowTA_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
@@ -192,11 +194,13 @@ class MATHPlugin(GeneralPlugin):
     def editFont_(self, menuItem):
         try:
             master = Glyphs.font.selectedFontMaster
-            if PLUGIN_ID not in master.userData:
-                master.userData[PLUGIN_ID] = {}
-            if "constants" not in master.userData[PLUGIN_ID]:
-                master.userData[PLUGIN_ID]["constants"] = {}
-            data = master.userData[PLUGIN_ID]["constants"]
+            if (
+                PLUGIN_ID not in master.userData
+                or "constants" not in master.userData[PLUGIN_ID]
+            ):
+                data = {}
+            else:
+                data = dict(master.userData[PLUGIN_ID]["constants"])
 
             width, height = 650, 400
             border = 10
@@ -212,13 +216,21 @@ class MATHPlugin(GeneralPlugin):
                 "Radicals": MATH_CONSTANTS_RADICALS,
             }
 
-            def makeCallback(c):
+            def makeCallback(c, constants):
                 def callback(sender):
-                    # Make a copy, otherwise Glyphs wont mark the font modified.
-                    # https://forum.glyphsapp.com/t/changing-userdata-does-not-always-mark-the-document-modified/19456
-                    data = dict(master.userData[PLUGIN_ID])
-                    constants = dict(data["constants"])
+                    value = sender.get()
+                    if c in constants and constants[c] == value:
+                        return
+
                     constants[c] = sender.get()
+
+                    if PLUGIN_ID in master.userData:
+                        # Make a copy, otherwise Glyphs wont mark the font
+                        # modified.
+                        # https://forum.glyphsapp.com/t/changing-userdata-does-not-always-mark-the-document-modified/19456
+                        data = dict(master.userData[PLUGIN_ID])
+                    else:
+                        data = {}
                     data["constants"] = constants
                     master.userData[PLUGIN_ID] = data
 
@@ -234,7 +246,7 @@ class MATHPlugin(GeneralPlugin):
                 tab.r.setBorderWidth(0)
                 constants = tabs[name]
                 for j, c in enumerate(constants):
-                    callback = makeCallback(c)
+                    callback = makeCallback(c, data)
                     v = data.get(c, 0)
                     box = vanilla.TextBox(
                         (0, gap * j + 1, -border, -border), c, alignment="right"
