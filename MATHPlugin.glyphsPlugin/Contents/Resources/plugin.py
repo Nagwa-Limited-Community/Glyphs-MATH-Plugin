@@ -272,12 +272,13 @@ class MATHPlugin(GeneralPlugin):
                 for j, c in enumerate(constants):
                     callback = makeCallback(c, data)
                     v = data.get(c, None)
+                    x, y = 0, gap * j + 1
                     box = vanilla.TextBox(
-                        (0, gap * j + 1, -border, -border), c, alignment="right"
+                        (x, y, -border, -border), c, alignment="right"
                     )
                     formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
                     edit = vanilla.EditText(
-                        (0, gap * j + 1, 40, 25),
+                        (x, y, 40, 25),
                         v,
                         callback=callback,
                         formatter=formatter,
