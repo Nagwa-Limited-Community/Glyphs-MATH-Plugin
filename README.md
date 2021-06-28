@@ -10,10 +10,13 @@ Installation
 To install from Git, clone this repository, open `MATHPlugin.glyphsPlugin` in
 Glyphs (e.g. by double clicking or drag and drop), and Glyphs will prompt you
 to install it. Select Install, and when asked whether to Copy or Alias the
-plugin, Alias is preferred so that the plugin gets updated when the local clone
-is updated without having to install again.
+plug-in, Alias is preferred so that the plug-in gets updated when the local
+clone is updated without having to install again.
 
-Restart Glyphs and the plugin should be ready (when the plug-in is updated
+The plug-in requires FontTools and Vanilla modules, make sure to install them
+from _Window → Plugin Manger → Modules_.
+
+Restart Glyphs and the plug-in should be ready (when the plug-in is updated
 Glyphs should be restarted as well, to use the new version).
 
 Usage
