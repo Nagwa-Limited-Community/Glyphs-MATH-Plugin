@@ -162,6 +162,12 @@ class MATHPlugin(GeneralPlugin):
         """Please leave this method unchanged"""
         return __file__
 
+    def message_(self, message):
+        Message(message, self.name)
+
+    def notification_(self, message):
+        Glyphs.showNotification(self.name, message)
+
     def validateMenuItem_(self, menuItem):
         if menuItem.identifier() == "editFont:":
             return Glyphs.font is not None
@@ -287,7 +293,7 @@ class MATHPlugin(GeneralPlugin):
                     setattr(tab.r, f"{c}Edit", edit)
             window.open()
         except:
-            Message(f"Setting constancies failed:\n{traceback.format_exc()}", self.name)
+            self.message_(f"Setting constancies failed:\n{traceback.format_exc()}")
 
     def editGlyph_(self, menuItem):
         layer = Glyphs.font.selectedLayers[0]
@@ -318,7 +324,7 @@ class MATHPlugin(GeneralPlugin):
                         NSColor.magentaColor().set()
                     line.stroke()
         except:
-            Message(f"Drawing anchors failed:\n{traceback.format_exc()}", self.name)
+            self.message_(f"Drawing anchors failed:\n{traceback.format_exc()}")
 
     @objc.python_method
     def export_(self, notification):
@@ -332,11 +338,9 @@ class MATHPlugin(GeneralPlugin):
                 success = self.build_(font, ttFont)
                 if "MATH" in ttFont:
                     ttFont.save(path)
-                    Glyphs.showNotification(
-                        self.name, "MATH table exported successfully"
-                    )
+                    self.notification_("MATH table exported successfully")
         except:
-            Message(f"Exporting failed:\n{traceback.format_exc()}", self.name)
+            self.message_(f"Exporting failed:\n{traceback.format_exc()}")
 
     @staticmethod
     def build_(font, ttFont):
