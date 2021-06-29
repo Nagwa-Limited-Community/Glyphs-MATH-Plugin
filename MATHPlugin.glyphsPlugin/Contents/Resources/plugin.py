@@ -329,8 +329,12 @@ class MATHPlugin(GeneralPlugin):
 
             font = instance.interpolatedFont
             with TTFont(path) as ttFont:
-                self.build_(font, ttFont)
-                ttFont.save(path)
+                success = self.build_(font, ttFont)
+                if "MATH" in ttFont:
+                    ttFont.save(path)
+                    Glyphs.showNotification(
+                        self.name, "MATH table exported successfully"
+                    )
         except:
             Message(f"Exporting failed:\n{traceback.format_exc()}", self.name)
 
