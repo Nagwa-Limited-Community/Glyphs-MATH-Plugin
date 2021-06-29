@@ -208,9 +208,9 @@ class MATHPlugin(GeneralPlugin):
                 PLUGIN_ID not in master.userData
                 or "constants" not in master.userData[PLUGIN_ID]
             ):
-                data = {}
+                constants = {}
             else:
-                data = dict(master.userData[PLUGIN_ID]["constants"])
+                constants = dict(master.userData[PLUGIN_ID]["constants"])
 
             width, height = 650, 400
             border = 10
@@ -268,10 +268,9 @@ class MATHPlugin(GeneralPlugin):
                 tab.r = vanilla.Box((subwidth, 0, subwidth, 0))
                 tab.l.setBorderWidth(0)
                 tab.r.setBorderWidth(0)
-                constants = tabs[name]
-                for j, c in enumerate(constants):
-                    callback = makeCallback(c, data)
-                    v = data.get(c, None)
+                for j, c in enumerate(tabs[name]):
+                    callback = makeCallback(c, constants)
+                    v = constants.get(c, None)
                     x, y = 0, gap * j + 1
                     box = vanilla.TextBox(
                         (x, y, -border, -border), c, alignment="right"
