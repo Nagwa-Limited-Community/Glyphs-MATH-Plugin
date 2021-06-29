@@ -235,14 +235,13 @@ class MATHPlugin(GeneralPlugin):
             def makeCallback(c, constants):
                 def callback(sender):
                     value = sender.get()
-                    if value is None:
-                        return
-
-                    value = int(value)
+                    value = value if value is None else int(value)
                     if c in constants and constants[c] == value:
                         return
 
-                    constants[c] = sender.get()
+                    constants[c] = value
+                    if value is None:
+                        del constants[c]
 
                     if PLUGIN_ID in master.userData:
                         # Make a copy, otherwise Glyphs wont mark the font
