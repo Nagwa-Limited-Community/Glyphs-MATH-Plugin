@@ -369,16 +369,16 @@ class MATHPlugin(GeneralPlugin):
             font.customParameters["Don't use Production Names"]
             or instance.customParameters["Don't use Production Names"]
         ):
-            productionNameMap = {g.name: g.name for g in font.glyphs}
+            productionMap = {g.name: g.name for g in font.glyphs}
         else:
-            productionNameMap = {g.name: g.productionName for g in font.glyphs}
+            productionMap = {g.name: g.productionName or g.name for g in font.glyphs}
 
         italic = {}
         accent = {}
         vvariants = {}
         hvariants = {}
         for glyph in font.glyphs:
-            name = productionNameMap[glyph.name]
+            name = productionMap[glyph.name]
             for anchor in glyph.layers[0].anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
                     italic[name] = otTables.MathValueRecord()
