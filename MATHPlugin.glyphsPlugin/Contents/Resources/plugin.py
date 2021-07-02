@@ -28,6 +28,9 @@ from GlyphsApp.plugins import GeneralPlugin
 PLUGIN_ID = "com.nagwa.MATHPlugin"
 CONSTANTS_ID = PLUGIN_ID + ".constants"
 
+V_VARIANTS_ID = PLUGIN_ID + ".vVariants"
+H_VARIANTS_ID = PLUGIN_ID + ".hVariants"
+
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
     "ScriptScriptPercentScaleDown",
@@ -37,6 +40,7 @@ MATH_CONSTANTS_GENERAL = [
     "AxisHeight",
     "AccentBaseHeight",
     "FlattenedAccentBaseHeight",
+    "MinConnectorOverlap",
 ]
 
 MATH_CONSTANTS_SCRIPTS = [
@@ -108,6 +112,7 @@ MATH_CONSTANTS_RADICALS = [
 CONSTANT_UNSIGNED = [
     "DelimitedSubFormulaMinHeight",
     "DisplayOperatorMinHeight",
+    "MinConnectorOverlap",
 ]
 
 CONSTANT_INTEGERS = CONSTANT_UNSIGNED + [
@@ -336,12 +341,15 @@ class MATHPlugin(GeneralPlugin):
     def build_(font, ttFont):
         instance = font.instances[0]
         master = font.masters[0]
-        userData = master.userData[CONSTANTS_ID]
+        userData = master.userData.get(CONSTANTS_ID, {})
 
         constants = {}
         found = False
         if userData:
             for c in MATH_CONSTANTS:
+                # MinConnectorOverlap is used in MathVariants table below.
+                if c == "MinConnectorOverlap":
+                    continue
                 v = userData.get(c, None)
                 if v is None:
                     v = 0
@@ -367,6 +375,8 @@ class MATHPlugin(GeneralPlugin):
 
         italic = {}
         accent = {}
+        vvariants = {}
+        hvariants = {}
         for glyph in font.glyphs:
             name = productionNameMap[glyph.name]
             for anchor in glyph.layers[0].anchors:
@@ -376,8 +386,12 @@ class MATHPlugin(GeneralPlugin):
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = otTables.MathValueRecord()
                     accent[name].Value = int(anchor.position.x)
+            if vvars := glyph.userData[V_VARIANTS_ID]:
+                vvariants[name] = vvars
+            if hvars := glyph.userData[H_VARIANTS_ID]:
+                hvariants[name] = hvars
 
-        if not any([constants, italic, accent]):
+        if not any([constants, italic, accent, vvariants, hvariants]):
             return
 
         ttFont["MATH"] = newTable("MATH")
@@ -393,11 +407,9 @@ class MATHPlugin(GeneralPlugin):
         glyphOrder = ttFont.getGlyphOrder()
         glyphMap = {n: i for i, n in enumerate(glyphOrder)}
 
-        if not any([italic, accent]):
-            return
-
-        info = table.MathGlyphInfo = otTables.MathGlyphInfo()
-        info.populateDefaults()
+        if any([italic, accent]):
+            info = table.MathGlyphInfo = otTables.MathGlyphInfo()
+            info.populateDefaults()
 
         if italic:
             coverage = otl.buildCoverage(italic.keys(), glyphMap)
@@ -410,3 +422,36 @@ class MATHPlugin(GeneralPlugin):
             ta = info.MathTopAccentAttachment = otTables.MathTopAccentAttachment()
             ta.TopAccentCoverage = coverage
             ta.TopAccentAttachment = [accent[n] for n in coverage.glyphs]
+
+        if any([vvariants, hvariants]):
+            table.MathVariants = otTables.MathVariants()
+            overlap = userData.get("MinConnectorOverlap", 0)
+            table.MathVariants.MinConnectorOverlap = overlap
+
+        for variants in (vvariants, hvariants):
+            if not variants:
+                continue
+            vertical = variants == vvariants
+            coverage = otl.buildCoverage(variants.keys(), glyphMap)
+            constructions = []
+            for glyph in coverage.glyphs:
+                names = variants[glyph]
+                construction = otTables.MathGlyphConstruction()
+                construction.populateDefaults()
+                construction.VariantCount = len(names)
+                construction.MathGlyphVariantRecord = records = []
+                constructions.append(construction)
+                for name in names:
+                    size = font.glyphs[name].layers[0].bounds.size
+                    width, height = size.width, size.height
+                    record = otTables.MathGlyphVariantRecord()
+                    record.VariantGlyph = name
+                    record.AdvanceMeasurement = int(height if vertical else width)
+                    records.append(record)
+
+            if vertical:
+                table.MathVariants.VertGlyphCoverage = coverage
+                table.MathVariants.VertGlyphConstruction = constructions
+            else:
+                table.MathVariants.HorizGlyphCoverage = coverage
+                table.MathVariants.HorizGlyphConstruction = constructions
