@@ -26,6 +26,7 @@ from GlyphsApp import (
 from GlyphsApp.plugins import GeneralPlugin
 
 PLUGIN_ID = "com.nagwa.MATHPlugin"
+CONSTANTS_ID = PLUGIN_ID + ".constants"
 
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
@@ -210,13 +211,10 @@ class MATHPlugin(GeneralPlugin):
     def editFont_(self, menuItem):
         try:
             master = Glyphs.font.selectedFontMaster
-            if (
-                PLUGIN_ID not in master.userData
-                or "constants" not in master.userData[PLUGIN_ID]
-            ):
+            if CONSTANTS_ID not in master.userData:
                 constants = {}
             else:
-                constants = dict(master.userData[PLUGIN_ID]["constants"])
+                constants = dict(master.userData[CONSTANTS_ID])
 
             width, height = 650, 400
             border = 10
@@ -243,15 +241,8 @@ class MATHPlugin(GeneralPlugin):
                     if value is None:
                         del constants[c]
 
-                    if PLUGIN_ID in master.userData:
-                        # Make a copy, otherwise Glyphs wont mark the font
-                        # modified.
-                        # https://forum.glyphsapp.com/t/changing-userdata-does-not-always-mark-the-document-modified/19456
-                        data = dict(master.userData[PLUGIN_ID])
-                    else:
-                        data = {}
-                    data["constants"] = constants
-                    master.userData[PLUGIN_ID] = data
+                    if constants:
+                        master.userData[CONSTANTS_ID] = constants
 
                 return callback
 
@@ -345,13 +336,13 @@ class MATHPlugin(GeneralPlugin):
     def build_(font, ttFont):
         instance = font.instances[0]
         master = font.masters[0]
-        data = master.userData[PLUGIN_ID]
+        userData = master.userData[CONSTANTS_ID]
 
         constants = {}
         found = False
-        if data and "constants" in data:
+        if userData:
             for c in MATH_CONSTANTS:
-                v = data["constants"].get(c, None)
+                v = userData.get(c, None)
                 if v is None:
                     v = 0
                 else:
