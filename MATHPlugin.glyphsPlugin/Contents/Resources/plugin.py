@@ -30,6 +30,8 @@ CONSTANTS_ID = PLUGIN_ID + ".constants"
 
 V_VARIANTS_ID = PLUGIN_ID + ".vVariants"
 H_VARIANTS_ID = PLUGIN_ID + ".hVariants"
+V_ASSEMBLY_ID = PLUGIN_ID + ".vAssembly"
+H_ASSEMBLY_ID = PLUGIN_ID + ".hAssembly"
 
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
@@ -377,6 +379,8 @@ class MATHPlugin(GeneralPlugin):
         accent = {}
         vvariants = {}
         hvariants = {}
+        vassemblies = {}
+        hassemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             for anchor in glyph.layers[0].anchors:
@@ -390,8 +394,14 @@ class MATHPlugin(GeneralPlugin):
                 vvariants[name] = vvars
             if hvars := glyph.userData[H_VARIANTS_ID]:
                 hvariants[name] = hvars
+            if vassembly := glyph.userData[V_ASSEMBLY_ID]:
+                vassemblies[name] = vassembly
+            if hassembly := glyph.userData[H_ASSEMBLY_ID]:
+                hassemblies[name] = hassembly
 
-        if not any([constants, italic, accent, vvariants, hvariants]):
+        if not any(
+            [constants, italic, accent, vvariants, hvariants, vassemblies, hassemblies]
+        ):
             return
 
         ttFont["MATH"] = newTable("MATH")
@@ -407,7 +417,7 @@ class MATHPlugin(GeneralPlugin):
         glyphOrder = ttFont.getGlyphOrder()
         glyphMap = {n: i for i, n in enumerate(glyphOrder)}
 
-        if any([italic, accent]):
+        if italic or accent:
             info = table.MathGlyphInfo = otTables.MathGlyphInfo()
             info.populateDefaults()
 
@@ -423,31 +433,56 @@ class MATHPlugin(GeneralPlugin):
             ta.TopAccentCoverage = coverage
             ta.TopAccentAttachment = [accent[n] for n in coverage.glyphs]
 
-        if any([vvariants, hvariants]):
+        if any([vvariants, hvariants, vassemblies, hassemblies]):
             table.MathVariants = otTables.MathVariants()
             overlap = userData.get("MinConnectorOverlap", 0)
             table.MathVariants.MinConnectorOverlap = overlap
 
-        for variants in (vvariants, hvariants):
-            if not variants:
+        for variants, assemblies in (
+            (vvariants, vassemblies),
+            (hvariants, hassemblies),
+        ):
+            if not variants and not assemblies:
                 continue
             vertical = variants == vvariants
-            coverage = otl.buildCoverage(variants.keys(), glyphMap)
+            coverage = list(variants.keys()) + list(assemblies.keys())
+            coverage = otl.buildCoverage(coverage, glyphMap)
             constructions = []
             for glyph in coverage.glyphs:
-                names = variants[glyph]
-                construction = otTables.MathGlyphConstruction()
-                construction.populateDefaults()
-                construction.VariantCount = len(names)
-                construction.MathGlyphVariantRecord = records = []
+                construction = None
+                if glyph in variants:
+                    names = variants[glyph]
+                    construction = otTables.MathGlyphConstruction()
+                    construction.populateDefaults()
+                    construction.VariantCount = len(names)
+                    construction.MathGlyphVariantRecord = records = []
+                    for name in names:
+                        size = font.glyphs[name].layers[0].bounds.size
+                        width, height = size.width, size.height
+                        record = otTables.MathGlyphVariantRecord()
+                        record.VariantGlyph = productionMap[name]
+                        record.AdvanceMeasurement = int(height if vertical else width)
+                        records.append(record)
+                if glyph in assemblies:
+                    if construction is None:
+                        construction = otTables.MathGlyphConstruction()
+                        construction.populateDefaults()
+                    assembly = construction.GlyphAssembly = otTables.GlyphAssembly()
+                    assembly.ItalicsCorrection = otTables.MathValueRecord()
+                    # XXX
+                    assembly.ItalicsCorrection.Value = 0
+                    assembly.PartRecords = records = []
+                    for part in assemblies[glyph]:
+                        size = font.glyphs[part[0]].layers[0].bounds.size
+                        width, height = size.width, size.height
+                        record = otTables.GlyphPartRecord()
+                        record.glyph = productionMap[part[0]]
+                        record.PartFlags = int(part[1])
+                        record.StartConnectorLength = int(part[2])
+                        record.EndConnectorLength = int(part[3])
+                        record.FullAdvance = int(height if vertical else width)
+                        records.append(record)
                 constructions.append(construction)
-                for name in names:
-                    size = font.glyphs[name].layers[0].bounds.size
-                    width, height = size.width, size.height
-                    record = otTables.MathGlyphVariantRecord()
-                    record.VariantGlyph = name
-                    record.AdvanceMeasurement = int(height if vertical else width)
-                    records.append(record)
 
             if vertical:
                 table.MathVariants.VertGlyphCoverage = coverage
