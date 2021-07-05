@@ -9,6 +9,7 @@ from AppKit import (
     NSColor,
     NSMenuItem,
     NSNumberFormatter,
+    NSObject,
     NSOffState,
     NSOnState,
 )
@@ -17,6 +18,7 @@ from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
 from GlyphsApp import (
     DOCUMENTEXPORTED,
+    DOCUMENTOPENED,
     DRAWBACKGROUND,
     EDIT_MENU,
     VIEW_MENU,
@@ -137,6 +139,23 @@ ITALIC_CORRECTION_ANCHOR = "math.ic"
 TOP_ACCENT_ANCHOR = "math.ta"
 
 
+class NMGlyphName(NSObject):
+    @staticmethod
+    def __new__(cls, *args, **kwargs):
+        return cls.new()
+
+    @objc.python_method
+    def __init__(self, glyph):
+        self.glyph = glyph
+
+    @objc.python_method
+    def __str__(self):
+        return self.glyph.name
+
+    def propertyListValueFormat_(self, formatVersion):
+        return str(self)
+
+
 class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def settings(self):
@@ -147,6 +166,7 @@ class MATHPlugin(GeneralPlugin):
         self.defaults = Glyphs.defaults
 
         Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
+        Glyphs.addCallback(self.open_, DOCUMENTOPENED)
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
 
         menuItem = self.newMenuItem_("Show MATH Italic Correction", self.toggleShowIC_)
@@ -163,6 +183,7 @@ class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def __del__(self):
         Glyphs.removeCallback(self.export_)
+        Glyphs.removeCallback(self.open_)
         Glyphs.removeCallback(self.draw_)
 
     @objc.python_method
@@ -324,6 +345,30 @@ class MATHPlugin(GeneralPlugin):
             self.message_(f"Drawing anchors failed:\n{traceback.format_exc()}")
 
     @objc.python_method
+    def open_(self, notification):
+        """Load glyph name in GSGlyph.userData into GlyphName class so they
+        track glyph renames."""
+        try:
+            doc = notification.object()
+            font = doc.font
+
+            def gn(n):
+                return NMGlyphName(font[n])
+
+            varids = (V_VARIANTS_ID, H_VARIANTS_ID)
+            assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
+            for glyph in font.glyphs:
+                userData = glyph.userData
+                for id in varids:
+                    if names := userData[id]:
+                        userData[id] = [gn(n) for n in names]
+                for id in assemblyids:
+                    if assembly := userData[id]:
+                        userData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
+        except:
+            self.message_(f"Exporting failed:\n{traceback.format_exc()}")
+
+    @objc.python_method
     def export_(self, notification):
         try:
             info = notification.object()
@@ -451,7 +496,7 @@ class MATHPlugin(GeneralPlugin):
             for glyph in coverage.glyphs:
                 construction = None
                 if glyph in variants:
-                    names = variants[glyph]
+                    names = [str(g) for g in variants[glyph]]
                     construction = otTables.MathGlyphConstruction()
                     construction.populateDefaults()
                     construction.VariantCount = len(names)
@@ -473,10 +518,10 @@ class MATHPlugin(GeneralPlugin):
                     assembly.ItalicsCorrection.Value = 0
                     assembly.PartRecords = records = []
                     for part in assemblies[glyph]:
-                        size = font.glyphs[part[0]].layers[0].bounds.size
+                        size = part[0].glyph.layers[0].bounds.size
                         width, height = size.width, size.height
                         record = otTables.GlyphPartRecord()
-                        record.glyph = productionMap[part[0]]
+                        record.glyph = productionMap[str(part[0])]
                         record.PartFlags = int(part[1])
                         record.StartConnectorLength = int(part[2])
                         record.EndConnectorLength = int(part[3])
