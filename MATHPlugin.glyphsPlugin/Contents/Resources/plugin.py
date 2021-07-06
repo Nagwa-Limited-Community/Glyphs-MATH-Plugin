@@ -30,10 +30,11 @@ from GlyphsApp.plugins import GeneralPlugin
 PLUGIN_ID = "com.nagwa.MATHPlugin"
 CONSTANTS_ID = PLUGIN_ID + ".constants"
 
-V_VARIANTS_ID = PLUGIN_ID + ".vVariants"
-H_VARIANTS_ID = PLUGIN_ID + ".hVariants"
-V_ASSEMBLY_ID = PLUGIN_ID + ".vAssembly"
-H_ASSEMBLY_ID = PLUGIN_ID + ".hAssembly"
+VARIANTS_ID = PLUGIN_ID + ".variants"
+V_VARIANTS_ID = "vVariants"
+H_VARIANTS_ID = "hVariants"
+V_ASSEMBLY_ID = "vAssembly"
+H_ASSEMBLY_ID = "hAssembly"
 
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
@@ -358,13 +359,13 @@ class MATHPlugin(GeneralPlugin):
             varids = (V_VARIANTS_ID, H_VARIANTS_ID)
             assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
             for glyph in font.glyphs:
-                userData = glyph.userData
+                varData = glyph.userData.get(VARIANTS_ID, {})
                 for id in varids:
-                    if names := userData[id]:
-                        userData[id] = [gn(n) for n in names]
+                    if names := varData.get(id):
+                        varData[id] = [gn(n) for n in names]
                 for id in assemblyids:
-                    if assembly := userData[id]:
-                        userData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
+                    if assembly := varData.get(id):
+                        varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
         except:
             self.message_(f"Exporting failed:\n{traceback.format_exc()}")
 
@@ -436,13 +437,14 @@ class MATHPlugin(GeneralPlugin):
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = otTables.MathValueRecord()
                     accent[name].Value = int(anchor.position.x)
-            if vvars := glyph.userData[V_VARIANTS_ID]:
+            varData = glyph.userData.get(VARIANTS_ID, {})
+            if vvars := varData.get(V_VARIANTS_ID):
                 vvariants[name] = vvars
-            if hvars := glyph.userData[H_VARIANTS_ID]:
+            if hvars := varData.get(H_VARIANTS_ID):
                 hvariants[name] = hvars
-            if vassembly := glyph.userData[V_ASSEMBLY_ID]:
+            if vassembly := varData.get(V_ASSEMBLY_ID):
                 vassemblies[name] = vassembly
-            if hassembly := glyph.userData[H_ASSEMBLY_ID]:
+            if hassembly := varData.get(H_ASSEMBLY_ID):
                 hassemblies[name] = hassembly
 
         if not any(
