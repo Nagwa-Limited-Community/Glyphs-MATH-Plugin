@@ -428,10 +428,11 @@ class MATHPlugin(GeneralPlugin):
         hassemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
-            for anchor in glyph.layers[0].anchors:
+            layer = glyph.layers[0]
+            for anchor in layer.anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
                     italic[name] = otTables.MathValueRecord()
-                    italic[name].Value = int(anchor.position.x)
+                    italic[name].Value = int(anchor.position.x - layer.width)
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = otTables.MathValueRecord()
                     accent[name].Value = int(anchor.position.x)
