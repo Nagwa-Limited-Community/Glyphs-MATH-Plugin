@@ -330,7 +330,7 @@ class MATHPlugin(GeneralPlugin):
                 names.append(TOP_ACCENT_ANCHOR)
 
             master = layer.master
-            scale = 1.2 * options["Scale"]
+            scale = 1 / options["Scale"]
             for anchor in layer.anchors:
                 if anchor.name in names:
                     line = NSBezierPath.bezierPath()
