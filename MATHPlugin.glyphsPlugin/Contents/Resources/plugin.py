@@ -21,6 +21,7 @@ from GlyphsApp import (
     DOCUMENTOPENED,
     DRAWBACKGROUND,
     EDIT_MENU,
+    GLYPH_MENU,
     VIEW_MENU,
     Glyphs,
     Message,
@@ -36,6 +37,9 @@ V_VARIANTS_ID = "vVariants"
 H_VARIANTS_ID = "hVariants"
 V_ASSEMBLY_ID = "vAssembly"
 H_ASSEMBLY_ID = "hAssembly"
+
+ITALIC_CORRECTION_ANCHOR = "math.ic"
+TOP_ACCENT_ANCHOR = "math.ta"
 
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
@@ -137,9 +141,6 @@ MATH_CONSTANTS = (
     + MATH_CONSTANTS_RADICALS
 )
 
-ITALIC_CORRECTION_ANCHOR = "math.ic"
-TOP_ACCENT_ANCHOR = "math.ta"
-
 
 class MPMissingGlyph(Exception):
     def __init__(self, name):
@@ -163,6 +164,14 @@ class MPGlyphName(NSObject):
         if not self.glyph:
             raise MPMissingGlyph(name)
         return self.glyph.name
+
+    @objc.python_method
+    def __repr__(self):
+        return str(self)
+
+    @objc.python_method
+    def __eq__(self, other):
+        return str(self) == str(other)
 
     def propertyListValueFormat_(self, formatVersion):
         return str(self)
@@ -188,6 +197,9 @@ class MATHPlugin(GeneralPlugin):
             "Show MATH Top Accent Position", self.toggleShowTA_
         )
         Glyphs.menu[VIEW_MENU].append(menuItem)
+
+        menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
+        Glyphs.menu[GLYPH_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
         Glyphs.menu[EDIT_MENU].append(menuItem)
@@ -323,13 +335,141 @@ class MATHPlugin(GeneralPlugin):
                     setattr(tab.r, f"{c}Edit", edit)
             window.open()
         except:
-            self.message_(f"Setting constancies failed:\n{traceback.format_exc()}")
+            self.message_(f"Editing failed:\n{traceback.format_exc()}")
 
     def editGlyph_(self, menuItem):
-        layer = Glyphs.font.selectedLayers[0]
-        data = layer.userData[PLUGIN_ID]
-        if data:
-            print(data)
+        try:
+            font = Glyphs.font
+            glyph = font.selectedLayers[0].parent
+
+            width, height = 650, 400
+            border = 10
+            gap = 30
+            window = vanilla.Window((width, height), "MATH Variants")
+            window.tabs = vanilla.Tabs(
+                (border, border, -border, -border), ["Vertical", "Horizontal"]
+            )
+
+            def callback(sender):
+                try:
+                    old = ""
+                    new = sender.get().strip()
+                    tag = sender.getNSTextField().tag()
+                    varData = glyph.userData[VARIANTS_ID]
+                    if not varData:
+                        varData = {}
+                    if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
+                        old = " ".join(str(v) for v in var)
+                    if old == new:
+                        return
+
+                    varData = {k: list(v) for k, v in varData.items()}
+                    var = [MPGlyphName(font, n) for n in new.split()]
+                    varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+                except:
+                    self.message_(traceback.format_exc())
+
+            emptyRow = {"Glyph": "", "Start": 0, "End": 0, "Extender": False}
+
+            def editCallback(sender):
+                try:
+                    old = []
+                    new = [
+                        (
+                            MPGlyphName(font, item["Glyph"]),
+                            int(item["Extender"]),
+                            int(item["Start"]),
+                            int(item["End"]),
+                        )
+                        for item in sender.get()
+                        if item != emptyRow
+                    ]
+                    tag = sender.getNSTableView().tag()
+                    varData = glyph.userData[VARIANTS_ID]
+                    if not varData:
+                        varData = {}
+                    if var := varData.get(H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID):
+                        old = var
+                    if old == new:
+                        return
+                    varData = {k: list(v) for k, v in varData.items()}
+                    varData[H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID] = new
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+                except:
+                    self.message_(traceback.format_exc())
+
+            def doubleClickCallback(sender):
+                try:
+                    table = sender.getNSTableView()
+                    column = table.clickedColumn()
+                    row = table.clickedRow()
+                    if row < 0 and column < 0:
+                        items = sender.get()
+                        items.append(emptyRow)
+                        sender.set(items)
+                        row = len(items) - 1
+                    table._startEditingColumn_row_event_(column, row, None)
+                except:
+                    self.message_(traceback.format_exc())
+
+            for i, tab in enumerate(window.tabs):
+                pos1 = [border, border, -border, -border]
+                pos2 = [border, gap, -border, gap * 2]
+                tab.vbox = vanilla.TextBox(pos1, "Variants:")
+                tab.vedit = vanilla.EditText(pos2, continuous=False, callback=callback)
+                tab.vedit.getNSTextField().setTag_(i)
+
+                pos1[1] += pos2[1] + pos2[-1]
+                pos2[1] += pos2[1] + pos2[-1]
+                pos2[-1] = -border
+                tab.abox = vanilla.TextBox(pos1, "Assembly:")
+                tab.alist = vanilla.List(
+                    pos2,
+                    [],
+                    columnDescriptions=[
+                        {"title": "Glyph"},
+                        {"title": "Start"},
+                        {"title": "End"},
+                        {"title": "Extender", "cell": vanilla.CheckBoxListCell()},
+                    ],
+                    allowsSorting=False,
+                    drawVerticalLines=True,
+                    enableDelete=True,
+                    editCallback=editCallback,
+                    doubleClickCallback=doubleClickCallback,
+                )
+                tab.alist.getNSTableView().setTag_(i)
+
+            if varData := glyph.userData[VARIANTS_ID]:
+                if vvars := varData.get(V_VARIANTS_ID):
+                    window.tabs[0].vedit.set(" ".join(str(v) for v in vvars))
+                if hvars := varData.get(H_VARIANTS_ID):
+                    window.tabs[1].vedit.set(" ".join(str(v) for v in hvars))
+                if vassembly := varData.get(V_ASSEMBLY_ID):
+                    items = []
+                    for part in vassembly:
+                        part = list(part)
+                        part[0] = str(part[0])
+                        part[1] = bool(part[1])
+                        items.append(
+                            dict(zip(("Glyph", "Extender", "Start", "End"), part))
+                        )
+                    window.tabs[0].alist.set(items)
+                if hassembly := varData.get(H_ASSEMBLY_ID):
+                    items = []
+                    for part in hassembly:
+                        part = list(part)
+                        part[0] = str(part[0])
+                        part[1] = bool(part[1])
+                        items.append(
+                            dict(zip(("Glyph", "Extender", "Start", "End"), part))
+                        )
+                    window.tabs[1].alist.set(items)
+
+            window.open()
+        except:
+            self.message_(f"Editing failed:\n{traceback.format_exc()}")
 
     @objc.python_method
     def draw_(self, layer, options):
