@@ -29,6 +29,7 @@ from GlyphsApp.plugins import GeneralPlugin
 
 PLUGIN_ID = "com.nagwa.MATHPlugin"
 CONSTANTS_ID = PLUGIN_ID + ".constants"
+STATUS_ID = PLUGIN_ID + ".status"
 
 VARIANTS_ID = PLUGIN_ID + ".variants"
 V_VARIANTS_ID = "vVariants"
@@ -140,17 +141,27 @@ ITALIC_CORRECTION_ANCHOR = "math.ic"
 TOP_ACCENT_ANCHOR = "math.ta"
 
 
-class NMGlyphName(NSObject):
+class MPMissingGlyph(Exception):
+    def __init__(self, name):
+        super().__init__(f"Glyph name referenced but missing from font: {name}")
+
+
+class MPGlyphName(NSObject):
     @staticmethod
     def __new__(cls, *args, **kwargs):
         return cls.new()
 
     @objc.python_method
-    def __init__(self, glyph):
-        self.glyph = glyph
+    def __init__(self, font, name):
+        self.glyph = font.glyphs[name]
+        if not self.glyph:
+            font.tempData[STATUS_ID] = False
+            raise MPMissingGlyph(name)
 
     @objc.python_method
     def __str__(self):
+        if not self.glyph:
+            raise MPMissingGlyph(name)
         return self.glyph.name
 
     def propertyListValueFormat_(self, formatVersion):
@@ -354,7 +365,7 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             def gn(n):
-                return NMGlyphName(font[n])
+                return MPGlyphName(font, n)
 
             varids = (V_VARIANTS_ID, H_VARIANTS_ID)
             assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
@@ -366,8 +377,11 @@ class MATHPlugin(GeneralPlugin):
                 for id in assemblyids:
                     if assembly := varData.get(id):
                         varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
+            font.tempData[STATUS_ID] = True
+        except MPMissingGlyph as e:
+            self.message_(f"Opening failed:\n{e}")
         except:
-            self.message_(f"Exporting failed:\n{traceback.format_exc()}")
+            self.message_(f"Opening failed:\n{traceback.format_exc()}")
 
     @objc.python_method
     def export_(self, notification):
@@ -376,6 +390,10 @@ class MATHPlugin(GeneralPlugin):
             instance = info["instance"]
             path = info["fontFilePath"]
 
+            if not instance.font.tempData[STATUS_ID]:
+                self.message_(f"Export failed:\nloading math data failed")
+                return
+
             font = instance.interpolatedFont
             with TTFont(path) as ttFont:
                 success = self.build_(font, ttFont)
@@ -383,7 +401,7 @@ class MATHPlugin(GeneralPlugin):
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
         except:
-            self.message_(f"Exporting failed:\n{traceback.format_exc()}")
+            self.message_(f"Export failed:\n{traceback.format_exc()}")
 
     @staticmethod
     def build_(font, ttFont):
