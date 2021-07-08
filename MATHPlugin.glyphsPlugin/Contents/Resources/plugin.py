@@ -5,13 +5,16 @@ import traceback
 import objc
 import vanilla
 from AppKit import (
+    NSAlternateKeyMask,
     NSBezierPath,
     NSColor,
+    NSCommandKeyMask,
     NSMenuItem,
     NSNumberFormatter,
     NSObject,
     NSOffState,
     NSOnState,
+    NSShiftKeyMask,
 )
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
@@ -199,9 +202,13 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
+        menuItem.setKeyEquivalentModifierMask_(NSCommandKeyMask | NSShiftKeyMask)
+        menuItem.setKeyEquivalent_("x")
         Glyphs.menu[GLYPH_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
+        menuItem.setKeyEquivalentModifierMask_(NSCommandKeyMask | NSAlternateKeyMask)
+        menuItem.setKeyEquivalent_("x")
         Glyphs.menu[EDIT_MENU].append(menuItem)
 
     @objc.python_method
