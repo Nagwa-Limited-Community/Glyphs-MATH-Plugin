@@ -355,6 +355,10 @@ class MATHPlugin(GeneralPlugin):
                 (border, border, -border, -border), ["Vertical", "Horizontal"]
             )
 
+            def gn(n):
+                return n
+                return MPGlyphName(font, n)
+
             def callback(sender):
                 try:
                     old = ""
@@ -369,7 +373,7 @@ class MATHPlugin(GeneralPlugin):
                         return
 
                     varData = {k: list(v) for k, v in varData.items()}
-                    var = [MPGlyphName(font, n) for n in new.split()]
+                    var = [gn(n) for n in new.split()]
                     varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
                     glyph.userData[VARIANTS_ID] = dict(varData)
                 except:
@@ -382,7 +386,7 @@ class MATHPlugin(GeneralPlugin):
                     old = []
                     new = [
                         (
-                            MPGlyphName(font, item["g"]),
+                            gn(item["g"]),
                             int(item["f"]),
                             int(item["s"]),
                             int(item["e"]),
@@ -516,6 +520,7 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             def gn(n):
+                return n
                 return MPGlyphName(font, n)
 
             varids = (V_VARIANTS_ID, H_VARIANTS_ID)
