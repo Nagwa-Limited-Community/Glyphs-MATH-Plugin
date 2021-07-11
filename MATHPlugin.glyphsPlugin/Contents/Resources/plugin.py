@@ -164,10 +164,7 @@ class MPGlyphName(NSObject):
 
     @objc.python_method
     def __str__(self):
-        if not self.glyph:
-            raise MPMissingGlyph(name)
-        self.name = self.glyph.name
-        return self.name
+        return self.glyph.name
 
     @objc.python_method
     def __repr__(self):
