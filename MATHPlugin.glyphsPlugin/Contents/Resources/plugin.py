@@ -166,7 +166,8 @@ class MPGlyphName(NSObject):
     def __str__(self):
         if not self.glyph:
             raise MPMissingGlyph(name)
-        return self.glyph.name
+        self.name = self.glyph.name
+        return self.name
 
     @objc.python_method
     def __repr__(self):
@@ -377,17 +378,17 @@ class MATHPlugin(GeneralPlugin):
                 except:
                     self.message_(traceback.format_exc())
 
-            emptyRow = {"Glyph": "", "Start": 0, "End": 0, "Extender": False}
+            emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
             def editCallback(sender):
                 try:
                     old = []
                     new = [
                         (
-                            MPGlyphName(font, item["Glyph"]),
-                            int(item["Extender"]),
-                            int(item["Start"]),
-                            int(item["End"]),
+                            MPGlyphName(font, item["g"]),
+                            int(item["f"]),
+                            int(item["s"]),
+                            int(item["e"]),
                         )
                         for item in sender.get()
                         if item != emptyRow
@@ -435,10 +436,20 @@ class MATHPlugin(GeneralPlugin):
                     pos2,
                     [],
                     columnDescriptions=[
-                        {"title": "Glyph"},
-                        {"title": "Start"},
-                        {"title": "End"},
-                        {"title": "Extender", "cell": vanilla.CheckBoxListCell()},
+                        {"key": "g", "title": "Glyph"},
+                        {
+                            "key": "s",
+                            "title": "Start Connector",
+                        },
+                        {
+                            "key": "e",
+                            "title": "End Connector",
+                        },
+                        {
+                            "key": "f",
+                            "title": "Extender",
+                            "cell": vanilla.CheckBoxListCell(),
+                        },
                     ],
                     allowsSorting=False,
                     drawVerticalLines=True,
@@ -459,9 +470,7 @@ class MATHPlugin(GeneralPlugin):
                         part = list(part)
                         part[0] = str(part[0])
                         part[1] = bool(part[1])
-                        items.append(
-                            dict(zip(("Glyph", "Extender", "Start", "End"), part))
-                        )
+                        items.append(dict(zip(("g", "f", "s", "e"), part)))
                     window.tabs[0].alist.set(items)
                 if hassembly := varData.get(H_ASSEMBLY_ID):
                     items = []
@@ -469,9 +478,7 @@ class MATHPlugin(GeneralPlugin):
                         part = list(part)
                         part[0] = str(part[0])
                         part[1] = bool(part[1])
-                        items.append(
-                            dict(zip(("Glyph", "Extender", "Start", "End"), part))
-                        )
+                        items.append(dict(zip(("g", "f", "s", "e"), part)))
                     window.tabs[1].alist.set(items)
 
             window.open()
@@ -670,8 +677,8 @@ class MATHPlugin(GeneralPlugin):
                     construction.VariantCount = len(names)
                     construction.MathGlyphVariantRecord = records = []
                     for name in names:
-                        size = font.glyphs[name].layers[0].bounds.size
-                        width, height = size.width, size.height
+                        height = font.glyphs[name].layers[0].bounds.size.height
+                        width = font.glyphs[name].layers[0].width
                         record = otTables.MathGlyphVariantRecord()
                         record.VariantGlyph = productionMap[name]
                         record.AdvanceMeasurement = int(height if vertical else width)
@@ -686,8 +693,9 @@ class MATHPlugin(GeneralPlugin):
                     assembly.ItalicsCorrection.Value = 0
                     assembly.PartRecords = records = []
                     for part in assemblies[glyph]:
-                        size = part[0].glyph.layers[0].bounds.size
-                        width, height = size.width, size.height
+                        partGlyph = font.glyphs[str(part[0])]
+                        height = partGlyph.layers[0].bounds.size.height
+                        width = partGlyph.layers[0].width
                         record = otTables.GlyphPartRecord()
                         record.glyph = productionMap[str(part[0])]
                         record.PartFlags = int(part[1])
