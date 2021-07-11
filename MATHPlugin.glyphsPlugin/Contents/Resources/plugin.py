@@ -179,7 +179,7 @@ class MPGlyphName(NSObject):
 
 
 def _getMetrics(layer):
-    width = layers.width
+    width = layer.width
     height = layer.vertWidth
     if height is None:
         height = layer.bounds.size.height
