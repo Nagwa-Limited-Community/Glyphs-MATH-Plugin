@@ -178,6 +178,14 @@ class MPGlyphName(NSObject):
         return str(self)
 
 
+def _getMetrics(layer):
+    width = layers.width
+    height = layer.vertWidth
+    if height is None:
+        height = layer.bounds.size.height
+    return (width, height)
+
+
 class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def settings(self):
@@ -679,8 +687,7 @@ class MATHPlugin(GeneralPlugin):
                     construction.VariantCount = len(names)
                     construction.MathGlyphVariantRecord = records = []
                     for name in names:
-                        height = font.glyphs[name].layers[0].bounds.size.height
-                        width = font.glyphs[name].layers[0].width
+                        width, height = _getMetrics(font.glyphs[name].layers[0])
                         record = otTables.MathGlyphVariantRecord()
                         record.VariantGlyph = productionMap[name]
                         record.AdvanceMeasurement = int(height if vertical else width)
@@ -696,8 +703,7 @@ class MATHPlugin(GeneralPlugin):
                     assembly.PartRecords = records = []
                     for part in assemblies[glyph]:
                         partGlyph = font.glyphs[str(part[0])]
-                        height = partGlyph.layers[0].bounds.size.height
-                        width = partGlyph.layers[0].width
+                        width, height = _getMetrics(partGlyph.layers[0])
                         record = otTables.GlyphPartRecord()
                         record.glyph = productionMap[str(part[0])]
                         record.PartFlags = int(part[1])
