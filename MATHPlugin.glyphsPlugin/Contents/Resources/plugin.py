@@ -284,8 +284,6 @@ class MATHPlugin(GeneralPlugin):
                 constants = dict(master.userData[CONSTANTS_ID])
 
             width, height = 650, 400
-            border = 10
-            gap = 30
             window = vanilla.Window((width, height), "MATH Constants")
             tabs = {
                 "General": MATH_CONSTANTS_GENERAL,
@@ -323,31 +321,31 @@ class MATHPlugin(GeneralPlugin):
             sformatter.setMinimum_(-0x7FFF)
             sformatter.setMaximum_(0x7FFF)
 
-            window.tabs = vanilla.Tabs((border, border, -border, -border), tabs.keys())
+            window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
             for i, name in enumerate(tabs.keys()):
-                subwidth = width / 2 - border
                 tab = window.tabs[i]
-                tab.l = vanilla.Box((0, 0, subwidth, 0))
-                tab.r = vanilla.Box((subwidth, 0, subwidth, 0))
-                tab.l.setBorderWidth(0)
-                tab.r.setBorderWidth(0)
-                for j, c in enumerate(tabs[name]):
-                    callback = makeCallback(c, constants)
-                    v = constants.get(c, None)
-                    x, y = 0, gap * j + 1
-                    box = vanilla.TextBox(
-                        (x, y, -border, -border), c, alignment="right"
-                    )
+                rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
+                for c in tabs[name]:
+                    box = vanilla.Box("auto", borderWidth=0)
+                    box.box = vanilla.TextBox("auto", c, alignment="right")
                     formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
-                    edit = vanilla.EditText(
-                        (x, y, 40, 25),
-                        v,
-                        callback=callback,
+                    box.edit = vanilla.EditText(
+                        "auto",
+                        constants.get(c, None),
+                        callback=makeCallback(c, constants),
                         formatter=formatter,
                         placeholder="0",
                     )
-                    setattr(tab.l, f"{c}Box", box)
-                    setattr(tab.r, f"{c}Edit", edit)
+                    box.addAutoPosSizeRules(
+                        [
+                            f"H:|[box({width/2})]-[edit(40)]-{width/2-40}-|",
+                            "V:|[box]|",
+                            "V:|[edit(24)]|",
+                        ]
+                    )
+                    rules.append(f"H:|[{c}]|")
+                    setattr(tab, f"{c}", box)
+                tab.addAutoPosSizeRules(rules)
             window.open()
         except:
             self.message_(f"Editing failed:\n{traceback.format_exc()}")
@@ -357,13 +355,8 @@ class MATHPlugin(GeneralPlugin):
             font = Glyphs.font
             glyph = font.selectedLayers[0].parent
 
-            width, height = 650, 400
-            border = 10
-            gap = 30
-            window = vanilla.Window((width, height), "MATH Variants")
-            window.tabs = vanilla.Tabs(
-                (border, border, -border, -border), ["Vertical", "Horizontal"]
-            )
+            window = vanilla.Window((650, 400), "MATH Variants")
+            window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
 
             def gn(n):
                 return n
@@ -438,18 +431,15 @@ class MATHPlugin(GeneralPlugin):
                     del glyph.userData[EXTENDED_SHAPE_ID]
 
             for i, tab in enumerate(window.tabs):
-                pos1 = [border, border, -border, -border]
-                pos2 = [border, gap, -border, gap * 2]
-                tab.vbox = vanilla.TextBox(pos1, "Variants:")
-                tab.vedit = vanilla.EditText(pos2, continuous=False, callback=callback)
+                tab.vbox = vanilla.TextBox("auto", "Variants:")
+                tab.vedit = vanilla.EditText(
+                    "auto", continuous=False, callback=callback
+                )
                 tab.vedit.getNSTextField().setTag_(i)
 
-                pos1[1] += pos2[1] + pos2[-1]
-                pos2[1] += pos2[1] + pos2[-1]
-                pos2[-1] = -border
-                tab.abox = vanilla.TextBox(pos1, "Assembly:")
+                tab.abox = vanilla.TextBox("auto", "Assembly:")
                 tab.alist = vanilla.List(
-                    pos2,
+                    "auto",
                     [],
                     columnDescriptions=[
                         {"key": "g", "title": "Glyph"},
@@ -474,12 +464,20 @@ class MATHPlugin(GeneralPlugin):
                     doubleClickCallback=doubleClickCallback,
                 )
                 tab.alist.getNSTableView().setTag_(i)
+                rules = [
+                    "V:|-[vbox]-[vedit]-[abox]-[alist]-|",
+                    "H:|-[vbox]-|",
+                    "H:|-[vedit]-|",
+                    "H:|-[abox]-|",
+                    "H:|-[alist]-|",
+                ]
                 if i == 0:
-                    pos2[1] += pos2[1] + pos2[-1]
-                    pos2[-1] = pos1[-1]
                     tab.check = vanilla.CheckBox(
-                        pos2, "Extended shape", callback=checkBoxCallback
+                        "auto", "Extended shape", callback=checkBoxCallback
                     )
+                    rules[0] = rules[0][:-1] + "[check]-|"
+                    rules.append("|-[check]-|")
+                tab.addAutoPosSizeRules(rules)
 
             if varData := glyph.userData[VARIANTS_ID]:
                 if vvars := varData.get(V_VARIANTS_ID):
