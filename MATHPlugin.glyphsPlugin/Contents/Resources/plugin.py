@@ -295,21 +295,20 @@ class MATHPlugin(GeneralPlugin):
                 "Radicals": MATH_CONSTANTS_RADICALS,
             }
 
-            def makeCallback(c, constants):
-                def callback(sender):
-                    value = sender.get()
-                    value = value if value is None else int(value)
-                    if c in constants and constants[c] == value:
-                        return
+            def callback(sender):
+                value = sender.get()
+                value = value if value is None else int(value)
+                tag = sender.getNSTextField().tag()
+                c = MATH_CONSTANTS[tag]
+                if c in constants and constants[c] == value:
+                    return
 
-                    constants[c] = value
-                    if value is None:
-                        del constants[c]
+                constants[c] = value
+                if value is None:
+                    del constants[c]
 
-                    if constants:
-                        master.userData[CONSTANTS_ID] = constants
-
-                return callback
+                if constants:
+                    master.userData[CONSTANTS_ID] = constants
 
             uformatter = NSNumberFormatter.new()
             uformatter.setAllowsFloats_(False)
@@ -332,10 +331,12 @@ class MATHPlugin(GeneralPlugin):
                     box.edit = vanilla.EditText(
                         "auto",
                         constants.get(c, None),
-                        callback=makeCallback(c, constants),
+                        callback=callback,
                         formatter=formatter,
                         placeholder="0",
                     )
+                    box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
+
                     box.addAutoPosSizeRules(
                         [
                             f"H:|[box({width/2})]-[edit(40)]-{width/2-40}-|",
