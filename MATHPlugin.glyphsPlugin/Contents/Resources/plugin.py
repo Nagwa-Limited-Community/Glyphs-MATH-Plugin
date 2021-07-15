@@ -605,10 +605,6 @@ class MATHPlugin(GeneralPlugin):
 
         italic = {}
         accent = {}
-        vvariants = {}
-        hvariants = {}
-        vassemblies = {}
-        hassemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             layer = glyph.layers[0]
@@ -619,15 +615,29 @@ class MATHPlugin(GeneralPlugin):
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = otTables.MathValueRecord()
                     accent[name].Value = int(anchor.position.x)
+
+        vvariants = {}
+        hvariants = {}
+        vassemblies = {}
+        hassemblies = {}
+        for glyph in font.glyphs:
+            name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vvars := varData.get(V_VARIANTS_ID):
                 vvariants[name] = vvars
             if hvars := varData.get(H_VARIANTS_ID):
                 hvariants[name] = hvars
             if vassembly := varData.get(V_ASSEMBLY_ID):
-                vassemblies[name] = vassembly
+                vassemblies[name] = vassembly[:]
+                # Last part has italic correction, use it for the assembly.
+                if ic := italic.get(str(vassemblies[name][-1][0])):
+                    del italic[str(vassemblies[name][-1][0])]
+                    vassemblies[name][0] = list(vassemblies[name][0]) + [ic]
             if hassembly := varData.get(H_ASSEMBLY_ID):
-                hassemblies[name] = hassembly
+                hassemblies[name] = hassembly[:]
+                if ic := italic.get(str(hassemblies[name][-1][0])):
+                    del italic[str(hassemblies[name][-1][0])]
+                    hassemblies[name][0] = list(hassemblies[name][0]) + [ic]
 
         if not any(
             [constants, italic, accent, vvariants, hvariants, vassemblies, hassemblies]
@@ -698,10 +708,11 @@ class MATHPlugin(GeneralPlugin):
                         construction.populateDefaults()
                     assembly = construction.GlyphAssembly = otTables.GlyphAssembly()
                     assembly.ItalicsCorrection = otTables.MathValueRecord()
-                    # XXX
                     assembly.ItalicsCorrection.Value = 0
                     assembly.PartRecords = records = []
                     for part in assemblies[glyph]:
+                        if len(part) > 4:
+                            assembly.ItalicsCorrection = part[4]
                         partGlyph = font.glyphs[str(part[0])]
                         width, height = _getMetrics(partGlyph.layers[0])
                         record = otTables.GlyphPartRecord()
