@@ -35,6 +35,8 @@ PLUGIN_ID = "com.nagwa.MATHPlugin"
 CONSTANTS_ID = PLUGIN_ID + ".constants"
 STATUS_ID = PLUGIN_ID + ".status"
 
+EXTENDED_SHAPE_ID = PLUGIN_ID + ".extendedShape"
+
 VARIANTS_ID = PLUGIN_ID + ".variants"
 V_VARIANTS_ID = "vVariants"
 H_VARIANTS_ID = "hVariants"
@@ -430,6 +432,11 @@ class MATHPlugin(GeneralPlugin):
                 except:
                     self.message_(traceback.format_exc())
 
+            def checkBoxCallback(sender):
+                glyph.userData[EXTENDED_SHAPE_ID] = sender.get()
+                if not sender.get():
+                    del glyph.userData[EXTENDED_SHAPE_ID]
+
             for i, tab in enumerate(window.tabs):
                 pos1 = [border, border, -border, -border]
                 pos2 = [border, gap, -border, gap * 2]
@@ -467,6 +474,12 @@ class MATHPlugin(GeneralPlugin):
                     doubleClickCallback=doubleClickCallback,
                 )
                 tab.alist.getNSTableView().setTag_(i)
+                if i == 0:
+                    pos2[1] += pos2[1] + pos2[-1]
+                    pos2[-1] = pos1[-1]
+                    tab.check = vanilla.CheckBox(
+                        pos2, "Extended shape", callback=checkBoxCallback
+                    )
 
             if varData := glyph.userData[VARIANTS_ID]:
                 if vvars := varData.get(V_VARIANTS_ID):
@@ -489,6 +502,8 @@ class MATHPlugin(GeneralPlugin):
                         part[1] = bool(part[1])
                         items.append(dict(zip(("g", "f", "s", "e"), part)))
                     window.tabs[1].alist.set(items)
+            if exended := glyph.userData[EXTENDED_SHAPE_ID]:
+                window.tabs[0].check.set(bool(exended))
 
             window.open()
         except:
@@ -605,6 +620,7 @@ class MATHPlugin(GeneralPlugin):
 
         italic = {}
         accent = {}
+        extended = set()
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             layer = glyph.layers[0]
@@ -615,6 +631,8 @@ class MATHPlugin(GeneralPlugin):
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = otTables.MathValueRecord()
                     accent[name].Value = int(anchor.position.x)
+            if e := glyph.userData[EXTENDED_SHAPE_ID]:
+                extended.add(name)
 
         vvariants = {}
         hvariants = {}
@@ -640,7 +658,16 @@ class MATHPlugin(GeneralPlugin):
                     hassemblies[name][0] = list(hassemblies[name][0]) + [ic]
 
         if not any(
-            [constants, italic, accent, vvariants, hvariants, vassemblies, hassemblies]
+            [
+                constants,
+                italic,
+                accent,
+                vvariants,
+                hvariants,
+                vassemblies,
+                hassemblies,
+                extended,
+            ]
         ):
             return
 
@@ -672,6 +699,11 @@ class MATHPlugin(GeneralPlugin):
             ta = info.MathTopAccentAttachment = otTables.MathTopAccentAttachment()
             ta.TopAccentCoverage = coverage
             ta.TopAccentAttachment = [accent[n] for n in coverage.glyphs]
+
+        if extended:
+            table.MathGlyphInfo.ExtendedShapeCoverage = otl.buildCoverage(
+                extended, glyphMap
+            )
 
         if any([vvariants, hvariants, vassemblies, hassemblies]):
             table.MathVariants = otTables.MathVariants()
