@@ -46,6 +46,11 @@ H_ASSEMBLY_ID = "hAssembly"
 ITALIC_CORRECTION_ANCHOR = "math.ic"
 TOP_ACCENT_ANCHOR = "math.ta"
 
+KERN_TOP_RIHGT_ANCHOR = "math.tr"
+KERN_TOP_LEFT_ANCHOR = "math.tl"
+KERN_BOTTOM_RIGHT_ANCHOR = "math.br"
+KERN_BOTTOM_LEFT_ANCHOR = "math.bl"
+
 MATH_CONSTANTS_GENERAL = [
     "ScriptPercentScaleDown",
     "ScriptScriptPercentScaleDown",
@@ -248,6 +253,12 @@ def _getMetrics(layer):
     return (width, height)
 
 
+def _valueRecord(v):
+    vr = otTables.MathValueRecord()
+    vr.Value = int(v)
+    return vr
+
+
 class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def settings(self):
@@ -267,6 +278,9 @@ class MATHPlugin(GeneralPlugin):
         menuItem = self.newMenuItem_(
             "Show MATH Top Accent Position", self.toggleShowTA_
         )
+        Glyphs.menu[VIEW_MENU].append(menuItem)
+
+        menuItem = self.newMenuItem_("Show MATH Cut-ins", self.toggleShowMK_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
@@ -328,6 +342,14 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.redraw()
 
     def toggleShowTA_(self, menuItem):
+        newState = NSOnState
+        state = menuItem.state()
+        if state == NSOnState:
+            newState = NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
+    def toggleShowMK_(self, menuItem):
         newState = NSOnState
         state = menuItem.state()
         if state == NSOnState:
@@ -592,6 +614,34 @@ class MATHPlugin(GeneralPlugin):
                     elif anchor.name == TOP_ACCENT_ANCHOR:
                         NSColor.magentaColor().set()
                     line.stroke()
+
+            if not self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
+                return
+
+            for name in (
+                KERN_TOP_RIHGT_ANCHOR,
+                KERN_TOP_LEFT_ANCHOR,
+                KERN_BOTTOM_RIGHT_ANCHOR,
+                KERN_BOTTOM_LEFT_ANCHOR,
+            ):
+                points = []
+                for anchor in layer.anchors:
+                    if anchor.name.startswith(name):
+                        points.append(anchor.position)
+                points = sorted(points, key=lambda pt: pt.y)
+
+                line = NSBezierPath.bezierPath()
+                line.setLineWidth_(scale)
+                NSColor.greenColor().set()
+                for i, pt in enumerate(points):
+                    if i == 0:
+                        line.moveToPoint_((pt.x, master.descender))
+                    line.lineToPoint_((pt.x, pt.y))
+                    if i < len(points) - 1:
+                        line.lineToPoint_((points[i + 1].x, pt.y))
+                    else:
+                        line.lineToPoint_((pt.x, master.ascender))
+                line.stroke()
         except:
             self.message_(f"Drawing anchors failed:\n{traceback.format_exc()}")
 
@@ -665,9 +715,7 @@ class MATHPlugin(GeneralPlugin):
                 if c in CONSTANT_INTEGERS:
                     constants[c] = v
                 else:
-                    record = otTables.MathValueRecord()
-                    record.Value = v
-                    constants[c] = record
+                    constants[c] = _valueRecord(v)
 
         constants = constants if found else {}
 
@@ -681,17 +729,32 @@ class MATHPlugin(GeneralPlugin):
 
         italic = {}
         accent = {}
+        kerning = {}
         extended = set()
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             layer = glyph.layers[0]
+            bounds = layer.bounds
             for anchor in layer.anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
-                    italic[name] = otTables.MathValueRecord()
-                    italic[name].Value = int(anchor.position.x - layer.width)
+                    italic[name] = _valueRecord(anchor.position.x - layer.width)
                 elif anchor.name == TOP_ACCENT_ANCHOR:
-                    accent[name] = otTables.MathValueRecord()
-                    accent[name].Value = int(anchor.position.x)
+                    accent[name] = _valueRecord(anchor.position.x)
+                else:
+                    for aname in (
+                        KERN_TOP_RIHGT_ANCHOR,
+                        KERN_TOP_LEFT_ANCHOR,
+                        KERN_BOTTOM_RIGHT_ANCHOR,
+                        KERN_BOTTOM_LEFT_ANCHOR,
+                    ):
+                        if anchor.name.startswith(aname):
+                            ext = aname.split(".")[1]
+                            pt = anchor.position
+                            if ext.endswith("r"):
+                                pt.x -= bounds.origin.x + bounds.size.width
+                            elif ext.endswith("l"):
+                                pt.x = bounds.origin.x - pt.x
+                            kerning.setdefault(name, {}).setdefault(ext, []).append(pt)
             if e := glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
 
@@ -727,6 +790,7 @@ class MATHPlugin(GeneralPlugin):
                 hvariants,
                 vassemblies,
                 hassemblies,
+                kerning,
                 extended,
             ]
         ):
@@ -760,6 +824,29 @@ class MATHPlugin(GeneralPlugin):
             ta = info.MathTopAccentAttachment = otTables.MathTopAccentAttachment()
             ta.TopAccentCoverage = coverage
             ta.TopAccentAttachment = [accent[n] for n in coverage.glyphs]
+
+        if kerning:
+            coverage = otl.buildCoverage(kerning.keys(), glyphMap)
+            ki = info.MathKernInfo = otTables.MathKernInfo()
+            ki.MathKernCoverage = coverage
+            ki.MathKernInfoRecords = records = []
+            for glyph in coverage.glyphs:
+                record = otTables.MathKernInfoRecord()
+                for side in ("tr", "tl", "br", "bl"):
+                    if pts := kerning[glyph].get(side):
+                        kern = otTables.MathKern()
+                        kern.HeightCount = len(pts) - 1
+                        kern.CorrectionHeight = [_valueRecord(pt.y) for pt in pts[:-1]]
+                        kern.KernValue = [_valueRecord(pt.x) for pt in pts]
+                        if side == "tr":
+                            record.TopRightMathKern = kern
+                        elif side == "tl":
+                            record.TopLeftMathKern = kern
+                        if side == "br":
+                            record.BottomRightMathKern = kern
+                        elif side == "bl":
+                            record.BottomLeftMathKern = kern
+                records.append(record)
 
         if extended:
             table.MathGlyphInfo.ExtendedShapeCoverage = otl.buildCoverage(
@@ -800,8 +887,7 @@ class MATHPlugin(GeneralPlugin):
                         construction = otTables.MathGlyphConstruction()
                         construction.populateDefaults()
                     assembly = construction.GlyphAssembly = otTables.GlyphAssembly()
-                    assembly.ItalicsCorrection = otTables.MathValueRecord()
-                    assembly.ItalicsCorrection.Value = 0
+                    assembly.ItalicsCorrection = _valueRecord(0)
                     assembly.PartRecords = records = []
                     for part in assemblies[glyph]:
                         if len(part) > 4:
