@@ -27,6 +27,7 @@ from GlyphsApp import (
     GLYPH_MENU,
     VIEW_MENU,
     Glyphs,
+    GSGlyphReference,
     Message,
 )
 from GlyphsApp.plugins import GeneralPlugin
@@ -212,23 +213,7 @@ MATH_CONSTANTS_TOOLTIPS = {
 }
 
 
-class MPMissingGlyph(Exception):
-    def __init__(self, name):
-        super().__init__(f"Glyph name referenced but missing from font: {name}")
-
-
-class MPGlyphName(NSObject):
-    @staticmethod
-    def __new__(cls, *args, **kwargs):
-        return cls.new()
-
-    @objc.python_method
-    def __init__(self, font, name):
-        self.glyph = font.glyphs[name]
-        if not self.glyph:
-            font.tempData[STATUS_ID] = False
-            raise MPMissingGlyph(name)
-
+class MPGlyphReference(GSGlyphReference):
     @objc.python_method
     def __str__(self):
         return self.glyph.name
@@ -240,9 +225,6 @@ class MPGlyphName(NSObject):
     @objc.python_method
     def __eq__(self, other):
         return str(self) == str(other)
-
-    def propertyListValueFormat_(self, formatVersion):
-        return str(self)
 
 
 def _getMetrics(layer):
@@ -444,8 +426,7 @@ class MATHPlugin(GeneralPlugin):
             window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
 
             def gn(n):
-                return n
-                return MPGlyphName(font, n)
+                return MPGlyphReference(font.glyphs[n])
 
             def callback(sender):
                 try:
@@ -654,8 +635,7 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             def gn(n):
-                return n
-                return MPGlyphName(font, n)
+                return MPGlyphReference(font.glyphs[n])
 
             varids = (V_VARIANTS_ID, H_VARIANTS_ID)
             assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
