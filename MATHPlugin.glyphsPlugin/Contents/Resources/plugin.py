@@ -410,6 +410,87 @@ class VariantsWindow:
             _message(traceback.format_exc())
 
 
+class ConstantsWindow:
+    def __init__(self, master):
+        self._master = master
+        if CONSTANTS_ID not in master.userData:
+            constants = {}
+        else:
+            constants = dict(master.userData[CONSTANTS_ID])
+        self._constants = constants
+
+        width, height = 650, 400
+        self._window = window = vanilla.Window((width, height), "MATH Constants")
+        tabs = {
+            "General": MATH_CONSTANTS_GENERAL,
+            "Sub/Superscript": MATH_CONSTANTS_SCRIPTS,
+            "Limits": MATH_CONSTANTS_LIMITS,
+            "Stacks": MATH_CONSTANTS_STACKS,
+            "Fractions": MATH_CONSTANTS_FRACTIONS,
+            "Over/Underbar": MATH_CONSTANTS_BARS,
+            "Radicals": MATH_CONSTANTS_RADICALS,
+        }
+
+        uformatter = NSNumberFormatter.new()
+        uformatter.setAllowsFloats_(False)
+        uformatter.setMinimum_(0)
+        uformatter.setMaximum_(0xFFFF)
+
+        sformatter = NSNumberFormatter.new()
+        sformatter.setAllowsFloats_(False)
+        sformatter.setMinimum_(-0x7FFF)
+        sformatter.setMaximum_(0x7FFF)
+
+        window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
+        for i, name in enumerate(tabs.keys()):
+            tab = window.tabs[i]
+            rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
+            for c in tabs[name]:
+                box = vanilla.Box("auto", borderWidth=0)
+                box.box = vanilla.TextBox("auto", c, alignment="right")
+                formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
+                box.edit = vanilla.EditText(
+                    "auto",
+                    constants.get(c, None),
+                    callback=self._callback,
+                    formatter=formatter,
+                    placeholder="0",
+                )
+                box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
+                box.box.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
+                box.edit.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
+
+                box.addAutoPosSizeRules(
+                    [
+                        f"H:|[box({width/2})]-[edit(40)]-{width/2-40}-|",
+                        "V:|[box]|",
+                        "V:|[edit(24)]|",
+                    ]
+                )
+                rules.append(f"H:|[{c}]|")
+                setattr(tab, f"{c}", box)
+            tab.addAutoPosSizeRules(rules)
+
+    def open(self):
+        self._window.open()
+
+    def _callback(self, sender):
+        constants = self._constants
+        value = sender.get()
+        value = value if value is None else int(value)
+        tag = sender.getNSTextField().tag()
+        c = MATH_CONSTANTS[tag]
+        if c in constants and constants[c] == value:
+            return
+
+        constants[c] = value
+        if value is None:
+            del constants[c]
+
+        if constants:
+            self._master.userData[CONSTANTS_ID] = constants
+
+
 class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def settings(self):
@@ -508,77 +589,7 @@ class MATHPlugin(GeneralPlugin):
     def editFont_(self, menuItem):
         try:
             master = Glyphs.font.selectedFontMaster
-            if CONSTANTS_ID not in master.userData:
-                constants = {}
-            else:
-                constants = dict(master.userData[CONSTANTS_ID])
-
-            width, height = 650, 400
-            window = vanilla.Window((width, height), "MATH Constants")
-            tabs = {
-                "General": MATH_CONSTANTS_GENERAL,
-                "Sub/Superscript": MATH_CONSTANTS_SCRIPTS,
-                "Limits": MATH_CONSTANTS_LIMITS,
-                "Stacks": MATH_CONSTANTS_STACKS,
-                "Fractions": MATH_CONSTANTS_FRACTIONS,
-                "Over/Underbar": MATH_CONSTANTS_BARS,
-                "Radicals": MATH_CONSTANTS_RADICALS,
-            }
-
-            def callback(sender):
-                value = sender.get()
-                value = value if value is None else int(value)
-                tag = sender.getNSTextField().tag()
-                c = MATH_CONSTANTS[tag]
-                if c in constants and constants[c] == value:
-                    return
-
-                constants[c] = value
-                if value is None:
-                    del constants[c]
-
-                if constants:
-                    master.userData[CONSTANTS_ID] = constants
-
-            uformatter = NSNumberFormatter.new()
-            uformatter.setAllowsFloats_(False)
-            uformatter.setMinimum_(0)
-            uformatter.setMaximum_(0xFFFF)
-
-            sformatter = NSNumberFormatter.new()
-            sformatter.setAllowsFloats_(False)
-            sformatter.setMinimum_(-0x7FFF)
-            sformatter.setMaximum_(0x7FFF)
-
-            window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
-            for i, name in enumerate(tabs.keys()):
-                tab = window.tabs[i]
-                rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
-                for c in tabs[name]:
-                    box = vanilla.Box("auto", borderWidth=0)
-                    box.box = vanilla.TextBox("auto", c, alignment="right")
-                    formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
-                    box.edit = vanilla.EditText(
-                        "auto",
-                        constants.get(c, None),
-                        callback=callback,
-                        formatter=formatter,
-                        placeholder="0",
-                    )
-                    box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
-                    box.box.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
-                    box.edit.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
-
-                    box.addAutoPosSizeRules(
-                        [
-                            f"H:|[box({width/2})]-[edit(40)]-{width/2-40}-|",
-                            "V:|[box]|",
-                            "V:|[edit(24)]|",
-                        ]
-                    )
-                    rules.append(f"H:|[{c}]|")
-                    setattr(tab, f"{c}", box)
-                tab.addAutoPosSizeRules(rules)
+            window = ConstantsWindow(master)
             window.open()
         except:
             _message(f"Editing failed:\n{traceback.format_exc()}")
