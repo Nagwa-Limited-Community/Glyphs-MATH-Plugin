@@ -7,14 +7,8 @@ table data as well as generate MATH table when exporting font.
 Installation
 ------------
 
-To install from Git, clone this repository, open `MATHPlugin.glyphsPlugin` in
-Glyphs (e.g. by double clicking or drag and drop), and Glyphs will prompt you
-to install it. Select Install, and when asked whether to Copy or Alias the
-plug-in, Alias is preferred so that the plug-in gets updated when the local
-clone is updated without having to install again.
-
-The plug-in requires FontTools and Vanilla modules, make sure to install them
-from _Window → Plugin Manger → Modules_.
+Go to _Window → Plugin Manger_ and search for “OpenType MATH Plug-in” and
+install it.
 
 Restart Glyphs and the plug-in should be ready (when the plug-in is updated
 Glyphs should be restarted as well, to use the new version).
