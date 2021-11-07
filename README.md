@@ -10,8 +10,8 @@ Installation
 Go to _Window → Plugin Manger_ and search for “OpenType MATH Plug-in” and
 install it.
 
-Restart Glyphs and the plug-in should be ready (when the plug-in is updated
-Glyphs should be restarted as well, to use the new version).
+Restart Glyphs and the plug-in should be ready (when the plug-in is updated,
+Glyphs should be restarted as well to use the new version).
 
 Usage
 -----
