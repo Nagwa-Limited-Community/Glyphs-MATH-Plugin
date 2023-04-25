@@ -231,20 +231,14 @@ def _valueRecord(v):
 
 def _message(message):
     Message(message, NAME)
+   
+def __GSGlyphReference__str__(self):
+    return self.glyph.name
+GSGlyphReference.__str__ = objc.python_method(__GSGlyphReference__str__)
 
-
-class MPGlyphReference(GSGlyphReference):
-    @objc.python_method
-    def __str__(self):
-        return self.glyph.name
-
-    @objc.python_method
-    def __repr__(self):
-        return str(self)
-
-    @objc.python_method
-    def __eq__(self, other):
-        return str(self) == str(other)
+def __GSGlyphReference__eq__(self, other):
+    return self.glyph.name == other.glyph.name
+GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 
 
 class VariantsWindow:
@@ -333,7 +327,7 @@ class VariantsWindow:
 
     def _glyphRef(self, name):
         try:
-            return MPGlyphReference(self._glyph.parent.glyphs[name])
+            return GSGlyphReference(self._glyph.parent.glyphs[name])
         except:
             _message(traceback.format_exc())
 
@@ -664,7 +658,7 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             def gn(n):
-                return MPGlyphReference(font.glyphs[n])
+                return GSGlyphReference(font.glyphs[n])
 
             varids = (V_VARIANTS_ID, H_VARIANTS_ID)
             assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
