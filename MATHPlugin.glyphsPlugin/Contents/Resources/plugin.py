@@ -231,13 +231,19 @@ def _valueRecord(v):
 
 def _message(message):
     Message(message, NAME)
-   
+
+
 def __GSGlyphReference__str__(self):
     return self.glyph.name
+
+
 GSGlyphReference.__str__ = objc.python_method(__GSGlyphReference__str__)
+
 
 def __GSGlyphReference__eq__(self, other):
     return self.glyph.name == other.glyph.name
+
+
 GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 
 
