@@ -250,7 +250,10 @@ GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 class VariantsWindow:
     def __init__(self, glyph):
         self._glyph = glyph
-        self._window = window = vanilla.Window((650, 400), "MATH Variants")
+        self._window = window = vanilla.Window(
+            (650, 400),
+            f"MATH Variants for ‘{self._glyph.name}’ from {glyph.parent.familyName}",
+        )
         window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
 
         self._emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
