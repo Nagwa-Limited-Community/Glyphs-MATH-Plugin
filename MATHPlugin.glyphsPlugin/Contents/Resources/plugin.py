@@ -21,6 +21,7 @@ from GlyphsApp import (
     GSGlyphReference,
     Message,
 )
+from GlyphsApp.drawingTools import restore, save, strokeWidth, translate
 from GlyphsApp.plugins import GeneralPlugin
 
 NAME = "OpenType MATH Plug-in"
@@ -712,6 +713,9 @@ class MATHPlugin(GeneralPlugin):
         menuItem = self.newMenuItem_("Show MATH Cut-ins", self.toggleShowMK_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
+        menuItem = self.newMenuItem_("Show MATH Variants", self.toggleShowGV_)
+        Glyphs.menu[VIEW_MENU].append(menuItem)
+
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
@@ -784,6 +788,14 @@ class MATHPlugin(GeneralPlugin):
         state = menuItem.state()
         if state == AppKit.NSOnState:
             newState = AppKit.NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
+    def toggleShowGV_(self, menuItem):
+        newState = NSOnState
+        state = menuItem.state()
+        if state == NSOnState:
+            newState = NSOffState
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
@@ -871,6 +883,57 @@ class MATHPlugin(GeneralPlugin):
                 line.stroke()
         except:
             _message(f"Drawing anchors failed:\n{traceback.format_exc()}")
+
+        draw_variants = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
+        if not draw_variants:
+            return
+
+        plugin_data = layer.parent.userData[f"{PLUGIN_ID}.variants"]
+        if not plugin_data:
+            return
+
+        scale = 1 / options["Scale"]
+        if va := plugin_data.get(V_ASSEMBLY_ID):
+            self._draw_v_assembly(va, layer, scale)
+
+        if ha := plugin_data.get(H_ASSEMBLY_ID):
+            self._draw_h_assembly(ha, layer, scale)
+
+    @objc.python_method
+    def _draw_h_assembly(self, recipe, layer, width):
+        save()
+        translate(layer.width, layer.bounds.origin.y)
+        for gref, flag, bot, top in recipe:
+            if isinstance(gref, GSGlyphReference):
+                glyph = gref.glyph
+            else:
+                glyph = layer.parent.parent.glyphs[gref]
+            gref_layer = glyph.layers[layer.layerId]
+            translate(-gref_layer.bounds.origin.x, 0)
+            NSColor.blueColor().set()
+            path = gref_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(gref_layer.bounds.size.width + gref_layer.bounds.origin.x, 0)
+        restore()
+
+    @objc.python_method
+    def _draw_v_assembly(self, recipe, layer, width):
+        save()
+        translate(layer.width, 0)
+        for gref, flag, bot, top in recipe:
+            if isinstance(gref, GSGlyphReference):
+                glyph = gref.glyph
+            else:
+                glyph = layer.parent.parent.glyphs[gref]
+            gref_layer = glyph.layers[layer.layerId]
+            translate(0, -gref_layer.bounds.origin.y)
+            NSColor.redColor().set()
+            path = gref_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(0, gref_layer.bounds.size.height + gref_layer.bounds.origin.y)
+        restore()
 
     @objc.python_method
     def open_(self, notification):
