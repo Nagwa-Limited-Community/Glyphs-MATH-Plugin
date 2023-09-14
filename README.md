@@ -22,7 +22,7 @@ The plug-in adds some new menu entries:
   ![MATH constants dialog](math-constants.png)
 * _Glyph → Edit MATH Variants..._ for editing glyph-level MATH variants,
   assembly, and extended shape flag.
-  The values are saved per-glyph so it is the same for all masters.
+  The values are saved per-master and should be edited for each master.
   ![MATH variants dialog](math-variants.png)
 * _View → Show MATH Italic Correction_ draws a vertical _blue_ line if there is
   an anchor named `math.ic`.
