@@ -870,13 +870,12 @@ class MATHPlugin(GeneralPlugin):
             overlap = userData.get("MinConnectorOverlap", 0)
             table.MathVariants.MinConnectorOverlap = overlap
 
-        for variants, assemblies in (
-            (vvariants, vassemblies),
-            (hvariants, hassemblies),
+        for vertical, variants, assemblies in (
+            (True, vvariants, vassemblies),
+            (False, hvariants, hassemblies),
         ):
             if not variants and not assemblies:
                 continue
-            vertical = variants == vvariants
             coverage = list(variants.keys()) + list(assemblies.keys())
             coverage = otl.buildCoverage(coverage, glyphMap)
             constructions = []
