@@ -821,7 +821,7 @@ class MATHPlugin(GeneralPlugin):
         glyphOrder = ttFont.getGlyphOrder()
         glyphMap = {n: i for i, n in enumerate(glyphOrder)}
 
-        if italic or accent:
+        if italic or accent or extended:
             info = table.MathGlyphInfo = otTables.MathGlyphInfo()
             info.populateDefaults()
 
@@ -861,7 +861,7 @@ class MATHPlugin(GeneralPlugin):
                 records.append(record)
 
         if extended:
-            table.MathGlyphInfo.ExtendedShapeCoverage = otl.buildCoverage(
+            info.ExtendedShapeCoverage = otl.buildCoverage(
                 extended, glyphMap
             )
 
