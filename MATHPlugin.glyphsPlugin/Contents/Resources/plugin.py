@@ -4,18 +4,8 @@ import traceback
 
 import objc
 import vanilla
-from AppKit import (
-    NSAlternateKeyMask,
-    NSBezierPath,
-    NSColor,
-    NSCommandKeyMask,
-    NSMenuItem,
-    NSNumberFormatter,
-    NSObject,
-    NSOffState,
-    NSOnState,
-    NSShiftKeyMask,
-)
+import AppKit
+
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
@@ -434,12 +424,12 @@ class ConstantsWindow:
             "Radicals": MATH_CONSTANTS_RADICALS,
         }
 
-        uformatter = NSNumberFormatter.new()
+        uformatter = AppKit.NSNumberFormatter.new()
         uformatter.setAllowsFloats_(False)
         uformatter.setMinimum_(0)
         uformatter.setMaximum_(0xFFFF)
 
-        sformatter = NSNumberFormatter.new()
+        sformatter = AppKit.NSNumberFormatter.new()
         sformatter.setAllowsFloats_(False)
         sformatter.setMinimum_(-0x7FFF)
         sformatter.setMaximum_(0x7FFF)
@@ -519,12 +509,16 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
-        menuItem.setKeyEquivalentModifierMask_(NSCommandKeyMask | NSShiftKeyMask)
+        menuItem.setKeyEquivalentModifierMask_(
+            AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
+        )
         menuItem.setKeyEquivalent_("x")
         Glyphs.menu[GLYPH_MENU].append(menuItem)
 
         menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
-        menuItem.setKeyEquivalentModifierMask_(NSCommandKeyMask | NSAlternateKeyMask)
+        menuItem.setKeyEquivalentModifierMask_(
+            AppKit.NSCommandKeyMask | AppKit.NSAlternateKeyMask
+        )
         menuItem.setKeyEquivalent_("x")
         Glyphs.menu[EDIT_MENU].append(menuItem)
 
@@ -549,7 +543,7 @@ class MATHPlugin(GeneralPlugin):
 
     @objc.python_method
     def newMenuItem_(self, title, action, setState=True):
-        menuItem = NSMenuItem.new()
+        menuItem = AppKit.NSMenuItem.new()
         menuItem.setTitle_(title)
         menuItem.setAction_(action)
         menuItem.setTarget_(self)
@@ -561,31 +555,31 @@ class MATHPlugin(GeneralPlugin):
     def setMenuItemState_(self, menuItem, state=None):
         key = f"{PLUGIN_ID}.{menuItem.identifier()}"
         if state is None:
-            state = self.defaults.get(key, NSOnState)
+            state = self.defaults.get(key, AppKit.NSOnState)
         self.defaults[key] = state
         menuItem.setState_(state)
 
     def toggleShowIC_(self, menuItem):
-        newState = NSOnState
+        newState = AppKit.NSOnState
         state = menuItem.state()
-        if state == NSOnState:
-            newState = NSOffState
+        if state == AppKit.NSOnState:
+            newState = AppKit.NSOffState
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
     def toggleShowTA_(self, menuItem):
-        newState = NSOnState
+        newState = AppKit.NSOnState
         state = menuItem.state()
-        if state == NSOnState:
-            newState = NSOffState
+        if state == AppKit.NSOnState:
+            newState = AppKit.NSOffState
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
     def toggleShowMK_(self, menuItem):
-        newState = NSOnState
+        newState = AppKit.NSOnState
         state = menuItem.state()
-        if state == NSOnState:
-            newState = NSOffState
+        if state == AppKit.NSOnState:
+            newState = AppKit.NSOffState
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
@@ -618,14 +612,14 @@ class MATHPlugin(GeneralPlugin):
             scale = 1 / options["Scale"]
             for anchor in layer.anchors:
                 if anchor.name in names:
-                    line = NSBezierPath.bezierPath()
+                    line = AppKit.NSBezierPath.bezierPath()
                     line.moveToPoint_((anchor.position.x, master.descender))
                     line.lineToPoint_((anchor.position.x, master.ascender))
                     line.setLineWidth_(scale)
                     if anchor.name == ITALIC_CORRECTION_ANCHOR:
-                        NSColor.blueColor().set()
+                        AppKit.NSColor.blueColor().set()
                     elif anchor.name == TOP_ACCENT_ANCHOR:
-                        NSColor.magentaColor().set()
+                        AppKit.NSColor.magentaColor().set()
                     line.stroke()
 
             if not self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
@@ -643,9 +637,9 @@ class MATHPlugin(GeneralPlugin):
                         points.append(anchor.position)
                 points = sorted(points, key=lambda pt: pt.y)
 
-                line = NSBezierPath.bezierPath()
+                line = AppKit.NSBezierPath.bezierPath()
                 line.setLineWidth_(scale)
-                NSColor.greenColor().set()
+                AppKit.NSColor.greenColor().set()
                 for i, pt in enumerate(points):
                     if i == 0:
                         line.moveToPoint_((pt.x, master.descender))
@@ -680,7 +674,7 @@ class MATHPlugin(GeneralPlugin):
                     if assembly := varData.get(id):
                         varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
             font.tempData[STATUS_ID] = True
-        except MPMissingGlyph as e:
+        except AppKit.MPMissingGlyph as e:
             _message(f"Opening failed:\n{e}")
         except:
             _message(f"Opening failed:\n{traceback.format_exc()}")
