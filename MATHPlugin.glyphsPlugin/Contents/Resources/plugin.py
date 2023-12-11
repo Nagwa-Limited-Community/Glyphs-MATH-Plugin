@@ -472,16 +472,20 @@ class ConstantsWindow:
         value = sender.get()
         value = value if value is None else int(value)
         tag = sender.getNSTextField().tag()
-        c = MATH_CONSTANTS[tag]
-        if c in constants and constants[c] == value:
+
+        constant = MATH_CONSTANTS[tag]
+        if constants.get(constant) == value:
             return
 
-        constants[c] = value
-        if value is None:
-            del constants[c]
+        if value is not None:
+            constants[constant] = value
+        elif constant in constants:
+            del constants[constant]
 
         if constants:
             self._master.userData[CONSTANTS_ID] = constants
+        elif CONSTANTS_ID in self._master.userData:
+            del self._master.userData[CONSTANTS_ID]
 
 
 class MATHPlugin(GeneralPlugin):
