@@ -861,9 +861,7 @@ class MATHPlugin(GeneralPlugin):
                 records.append(record)
 
         if extended:
-            info.ExtendedShapeCoverage = otl.buildCoverage(
-                extended, glyphMap
-            )
+            info.ExtendedShapeCoverage = otl.buildCoverage(extended, glyphMap)
 
         if any([vvariants, hvariants, vassemblies, hassemblies]):
             table.MathVariants = otTables.MathVariants()
