@@ -441,23 +441,32 @@ class ConstantsWindow:
             for c in tabs[name]:
                 box = vanilla.Box("auto", borderWidth=0)
                 box.box = vanilla.TextBox("auto", c, alignment="right")
-                formatter = uformatter if c in CONSTANT_UNSIGNED else sformatter
+                box.box.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
+
                 box.edit = vanilla.EditText(
                     "auto",
                     constants.get(c, None),
                     callback=self._callback,
-                    formatter=formatter,
+                    formatter=uformatter if c in CONSTANT_UNSIGNED else sformatter,
                     placeholder="0",
                 )
                 box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
-                box.box.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
                 box.edit.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
+
+                box.button = vanilla.ImageButton(
+                    "auto",
+                    imageNamed=AppKit.NSImageNameRefreshTemplate,
+                    callback=self._guessCallback,
+                )
+                box.button.getNSButton().setToolTip_("Guess value")
+                box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
                 box.addAutoPosSizeRules(
                     [
-                        f"H:|[box({width/2})]-[edit(40)]-{width/2-40}-|",
+                        f"H:|[box({width/2})]-[edit(40)]-[button(24)]-{width/2-64}-|",
                         "V:|[box]|",
                         "V:|[edit(24)]|",
+                        "V:|[button(24)]|",
                     ]
                 )
                 rules.append(f"H:|[{c}]|")
@@ -466,6 +475,198 @@ class ConstantsWindow:
 
     def open(self):
         self._window.open()
+
+    def _getRuleThickness(self):
+        constants = self._constants
+        value = constants.get("FractionRuleThickness")
+        if value is None:
+            value = constants.get("RadicalRuleThickness")
+        if value is None:
+            value = constants.get("OverbarRuleThickness")
+        if value is None:
+            value = constants.get("UnderbarRuleThickness")
+        if value is None:
+            # the height of the connecting part of "radical " glyph
+            master = self._master
+            if (glyph := master.font.glyphs["\u221A"]) is not None:
+                layer = glyph.layers[master.id]
+                paths = layer.paths
+                if len(paths):
+                    segments = list(
+                        reversed(
+                            sorted(paths[0].segments, key=lambda s: s.bounds.origin.x)
+                        )
+                    )
+                    value = segments[0].bounds.size.height
+        return value
+
+    def _guessCallback(self, sender):
+        constants = self._constants
+        master = self._master
+        font = master.font
+
+        constant = MATH_CONSTANTS[sender.getNSButton().tag()]
+        value = None
+        if constant == "ScriptPercentScaleDown":
+            value = 80
+        elif constant == "ScriptScriptPercentScaleDown":
+            value = 60
+        elif constant == "DelimitedSubFormulaMinHeight":
+            value = (master.ascender - master.descender) * 1.5
+        elif constant == "DisplayOperatorMinHeight":
+            # display "summation" height
+            if (glyph := font.glyphs["\u2211"]) is not None:
+                print(glyph)
+                if varData := glyph.userData[VARIANTS_ID]:
+                    if vvars := varData.get(V_VARIANTS_ID):
+                        value = vvars[1].glyph.layers[master.id].bounds.size.height
+        elif constant == "MathLeading":
+            if (value := master.customParameters["typoLineGap"]) is None:
+                value = master.customParameters["hheaLineGap"]
+        elif constant == "AxisHeight":
+            # "minus" midline
+            if (glyph := font.glyphs["\u2212"]) is not None:
+                bounds = glyph.layers[master.id].bounds
+                value = bounds.origin.y + bounds.size.height / 2
+        elif constant == "AccentBaseHeight":
+            value = master.xHeight
+        elif constant == "FlattenedAccentBaseHeight":
+            value = master.capHeight
+        elif constant == "SubscriptShiftDown":
+            value = master.customParameters["subscriptYOffset"]
+        elif constant == "SubscriptTopMax":
+            value = master.xHeight * 4 / 5
+        elif constant == "SubscriptBaselineDropMin":
+            # TODO
+            # value = -master.descender
+            pass
+        elif constant == "SuperscriptShiftUp":
+            value = master.customParameters["superscriptYOffset"]
+        elif constant == "SuperscriptShiftUpCramped":
+            # TODO: check if this is correct
+            value = master.customParameters["superscriptYOffset"]
+        elif constant == "SuperscriptBottomMin":
+            value = master.xHeight / 4
+        elif constant == "SuperscriptBaselineDropMax":
+            # TODO
+            # value = master.ascender
+            pass
+        elif constant == "SubSuperscriptGapMin":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 4
+        elif constant == "SuperscriptBottomMaxWithSubscript":
+            value = master.xHeight * 4 / 5
+        elif constant == "SpaceAfterScript":
+            value = font.upm / 24
+        elif constant == "UpperLimitGapMin":
+            # TODO
+            pass
+        elif constant == "UpperLimitBaselineRiseMin":
+            # TODO
+            pass
+        elif constant == "LowerLimitGapMin":
+            # TODO
+            pass
+        elif constant == "LowerLimitBaselineDropMin":
+            # TODO
+            pass
+        elif constant == "StackTopShiftUp":
+            # TODO
+            pass
+        elif constant == "StackTopDisplayStyleShiftUp":
+            # TODO
+            pass
+        elif constant == "StackBottomShiftDown":
+            # TODO
+            pass
+        elif constant == "StackBottomDisplayStyleShiftDown":
+            # TODO
+            pass
+        elif constant == "StackGapMin":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 3
+        elif constant == "StackDisplayStyleGapMin":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 7
+        elif constant == "StretchStackTopShiftUp":
+            # TODO
+            pass
+        elif constant == "StretchStackBottomShiftDown":
+            # TODO
+            pass
+        elif constant == "StretchStackGapAboveMin":
+            value = constants.get("UpperLimitGapMin")
+        elif constant == "StretchStackGapBelowMin":
+            value = constants.get("LowerLimitGapMin")
+        elif constant == "FractionNumeratorShiftUp":
+            # TODO
+            pass
+        elif constant == "FractionNumeratorDisplayStyleShiftUp":
+            value = constants.get("StackTopDisplayStyleShiftUp")
+        elif constant == "FractionDenominatorShiftDown":
+            # TODO
+            pass
+        elif constant == "FractionDenominatorDisplayStyleShiftDown":
+            value = constants.get("StackBottomDisplayStyleShiftDown")
+        elif constant == "FractionNumeratorGapMin":
+            value = self._getRuleThickness()
+        elif constant == "FractionNumDisplayStyleGapMin":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 3
+        elif constant == "FractionRuleThickness":
+            value = self._getRuleThickness()
+        elif constant == "FractionDenominatorGapMin":
+            value = self._getRuleThickness()
+        elif constant == "FractionDenomDisplayStyleGapMin":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 3
+        elif constant == "SkewedFractionHorizontalGap":
+            # TODO
+            pass
+        elif constant == "SkewedFractionVerticalGap":
+            # TODO
+            pass
+        elif constant == "OverbarVerticalGap":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 3
+        elif constant == "OverbarRuleThickness":
+            value = self._getRuleThickness()
+        elif constant == "OverbarExtraAscender":
+            value = self._getRuleThickness()
+        elif constant == "UnderbarVerticalGap":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 3
+        elif constant == "UnderbarRuleThickness":
+            value = self._getRuleThickness()
+        elif constant == "UnderbarExtraDescender":
+            value = self._getRuleThickness()
+        elif constant == "RadicalVerticalGap":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule * 5 / 4
+        elif constant == "RadicalDisplayStyleVerticalGap":
+            if (rule := self._getRuleThickness()) is not None:
+                value = rule + master.xHeight / 4
+        elif constant == "RadicalRuleThickness":
+            value = self._getRuleThickness()
+        elif constant == "RadicalExtraAscender":
+            if (value := constants.get("RadicalRuleThickness")) is None:
+                value = self._getRuleThickness()
+        elif constant == "RadicalKernBeforeDegree":
+            value = font.upm * 5 / 18
+        elif constant == "RadicalKernAfterDegree":
+            value = -font.upm * 10 / 18
+        elif constant == "RadicalDegreeBottomRaisePercent":
+            value = 60
+        elif constant == "MinConnectorOverlap":
+            # TODO
+            pass
+
+        if value is not None:
+            for tab in self._window.tabs:
+                box = getattr(tab, constant, None)
+                if box is not None:
+                    box.edit.set(value)
+                    self._callback(box.edit)
 
     def _callback(self, sender):
         constants = self._constants
