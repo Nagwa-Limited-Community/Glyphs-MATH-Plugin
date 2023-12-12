@@ -654,7 +654,7 @@ class MATHPlugin(GeneralPlugin):
 
     @objc.python_method
     def open_(self, notification):
-        """Load glyph name in GSGlyph.userData into GlyphName class so they
+        """Load glyph names in GSGlyph.userData into GSGlyphReference so they
         track glyph renames."""
         try:
             doc = notification.object()
