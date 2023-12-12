@@ -17,6 +17,7 @@ from GlyphsApp import (
     GLYPH_MENU,
     VIEW_MENU,
     Glyphs,
+    GSAnchor,
     GSGlyphReference,
     Message,
 )
@@ -336,9 +337,7 @@ class VariantsWindow:
             old = ""
             new = sender.get().strip()
             tag = sender.getNSTextField().tag()
-            varData = glyph.userData[VARIANTS_ID]
-            if not varData:
-                varData = {}
+            varData = glyph.userData.get(VARIANTS_ID, {})
             if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
                 old = " ".join(str(v) for v in var)
             if old == new:
@@ -881,6 +880,14 @@ class MATHPlugin(GeneralPlugin):
             doc = notification.object()
             font = doc.font
 
+            try:
+                ttFont = TTFont(doc.filePath)
+            except Exception:
+                pass
+            else:
+                self.import_(font, ttFont)
+                ttFont.close()
+
             def gn(n):
                 return GSGlyphReference(font.glyphs[n])
 
@@ -897,6 +904,155 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Opening failed:\n{e}")
         except:
             _message(f"Opening failed:\n{traceback.format_exc()}")
+
+    @staticmethod
+    def import_(font, ttFont):
+        if "MATH" not in ttFont:
+            return
+
+        master = font.masters[0]
+        userData = master.userData
+
+        table = ttFont["MATH"].table
+
+        if table.Version != 0x00010000:
+            return
+
+        constants = {}
+        if table.MathConstants:
+            for constant in MATH_CONSTANTS:
+                if (value := getattr(table.MathConstants, constant, None)) is not None:
+                    if isinstance(value, otTables.MathValueRecord):
+                        value = value.Value
+                    constants[constant] = value
+
+        if info := table.MathGlyphInfo:
+            if italic := info.MathItalicsCorrectionInfo:
+                for name, value in zip(
+                    italic.Coverage.glyphs, italic.ItalicsCorrection
+                ):
+                    layer = font.glyphs[name].layers[master.id]
+                    layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
+                    layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
+                        layer.width + value.Value,
+                        0,
+                    )
+
+            if accent := info.MathTopAccentAttachment:
+                for name, value in zip(
+                    accent.TopAccentCoverage.glyphs, accent.TopAccentAttachment
+                ):
+                    layer = font.glyphs[name].layers[master.id]
+                    layer.anchors[TOP_ACCENT_ANCHOR] = GSAnchor()
+                    layer.anchors[TOP_ACCENT_ANCHOR].position = (value.Value, 0)
+
+            if extended := info.ExtendedShapeCoverage:
+                for name in extended.glyphs:
+                    font.glyphs[name].userData[EXTENDED_SHAPE_ID] = True
+
+            if kerninfo := info.MathKernInfo:
+                for name, value in zip(
+                    kerninfo.MathKernCoverage.glyphs, kerninfo.MathKernInfoRecords
+                ):
+                    layer = font.glyphs[name].layers[master.id]
+
+                    if kern := value.TopRightMathKern:
+                        heights = kern.CorrectionHeight + [
+                            table.MathConstants.SuperscriptBottomMaxWithSubscript
+                        ]
+                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                            aname = f"{KERN_TOP_RIHGT_ANCHOR}.{i}"
+                            layer.anchors[aname] = GSAnchor()
+                            layer.anchors[aname].position = (
+                                x.Value + layer.width,
+                                y.Value,
+                            )
+                    if kern := value.BottomRightMathKern:
+                        heights = [_valueRecord(0)] + kern.CorrectionHeight
+                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                            aname = f"{KERN_BOTTOM_RIGHT_ANCHOR}.{i}"
+                            layer.anchors[aname] = GSAnchor()
+                            layer.anchors[aname].position = (
+                                x.Value + layer.width,
+                                y.Value,
+                            )
+
+                    if kern := value.TopLeftMathKern:
+                        heights = kern.CorrectionHeight + [
+                            table.MathConstants.SuperscriptBottomMaxWithSubscript
+                        ]
+                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                            aname = f"{KERN_TOP_LEFT_ANCHOR}.{i}"
+                            layer.anchors[aname] = GSAnchor()
+                            layer.anchors[aname].position = (-x.Value, y.Value)
+
+                    if kern := value.BottomLeftMathKern:
+                        heights = [_valueRecord(0)] + kern.CorrectionHeight
+                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                            aname = f"{KERN_BOTTOM_LEFT_ANCHOR}.{i}"
+                            layer.anchors[aname] = GSAnchor()
+                            layer.anchors[aname].position = (-x.Value, y.Value)
+
+        if variants := table.MathVariants:
+            constants["MinConnectorOverlap"] = variants.MinConnectorOverlap
+
+            if vvariants := variants.VertGlyphCoverage:
+                for name, value in zip(
+                    vvariants.glyphs, variants.VertGlyphConstruction
+                ):
+                    glyph = font.glyphs[name]
+                    varData = glyph.userData.get(VARIANTS_ID, {})
+                    if records := value.MathGlyphVariantRecord:
+                        varData[V_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                    if assembly := value.GlyphAssembly:
+                        varData[V_ASSEMBLY_ID] = [
+                            [
+                                p.glyph,
+                                p.PartFlags,
+                                p.StartConnectorLength,
+                                p.EndConnectorLength,
+                            ]
+                            for p in assembly.PartRecords
+                        ]
+                        if ic := assembly.ItalicsCorrection:
+                            part = varData[V_ASSEMBLY_ID][-1]
+                            layer = font.glyphs[part[0]].layers[master.id]
+                            layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
+                            layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
+                                layer.width + ic.Value,
+                                0,
+                            )
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+            if hvariants := variants.HorizGlyphCoverage:
+                for name, value in zip(
+                    hvariants.glyphs, variants.HorizGlyphConstruction
+                ):
+                    glyph = font.glyphs[name]
+                    varData = glyph.userData.get(VARIANTS_ID, {})
+                    if records := value.MathGlyphVariantRecord:
+                        varData[H_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                    if assembly := value.GlyphAssembly:
+                        varData[H_ASSEMBLY_ID] = [
+                            [
+                                p.glyph,
+                                p.PartFlags,
+                                p.StartConnectorLength,
+                                p.EndConnectorLength,
+                            ]
+                            for p in assembly.PartRecords
+                        ]
+                        if ic := assembly.ItalicsCorrection:
+                            part = varData[H_ASSEMBLY_ID][-1]
+                            layer = font.glyphs[part[0]].layers[master.id]
+                            layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
+                            layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
+                                layer.width + ic.Value,
+                                0,
+                            )
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+
+        if constants:
+            userData[CONSTANTS_ID] = constants
 
     @objc.python_method
     def export_(self, notification):
