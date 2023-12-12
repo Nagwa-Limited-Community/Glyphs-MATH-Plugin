@@ -663,14 +663,12 @@ class MATHPlugin(GeneralPlugin):
             def gn(n):
                 return GSGlyphReference(font.glyphs[n])
 
-            varids = (V_VARIANTS_ID, H_VARIANTS_ID)
-            assemblyids = (V_ASSEMBLY_ID, H_ASSEMBLY_ID)
             for glyph in font.glyphs:
                 varData = glyph.userData.get(VARIANTS_ID, {})
-                for id in varids:
+                for id in (V_VARIANTS_ID, H_VARIANTS_ID):
                     if names := varData.get(id):
                         varData[id] = [gn(n) for n in names]
-                for id in assemblyids:
+                for id in (V_ASSEMBLY_ID, H_ASSEMBLY_ID):
                     if assembly := varData.get(id):
                         varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
             font.tempData[STATUS_ID] = True
@@ -692,7 +690,7 @@ class MATHPlugin(GeneralPlugin):
 
             font = instance.interpolatedFont
             with TTFont(path) as ttFont:
-                success = self.build_(font, ttFont)
+                self.build_(font, ttFont)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
