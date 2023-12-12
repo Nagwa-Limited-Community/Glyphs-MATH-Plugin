@@ -838,7 +838,7 @@ class MATHPlugin(GeneralPlugin):
             ):
                 points = []
                 for anchor in layer.anchors:
-                    if anchor.name.startswith(name):
+                    if anchor.name == name or anchor.name.startswith(name + "."):
                         points.append(anchor.position)
                 points = sorted(points, key=lambda pt: pt.y)
 
