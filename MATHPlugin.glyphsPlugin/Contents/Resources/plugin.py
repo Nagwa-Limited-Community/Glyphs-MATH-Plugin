@@ -960,9 +960,9 @@ class MATHPlugin(GeneralPlugin):
                             ext = aname.split(".")[1]
                             pt = anchor.position
                             if ext.endswith("r"):
-                                pt.x -= bounds.origin.x + bounds.size.width
+                                pt.x -= layer.width
                             elif ext.endswith("l"):
-                                pt.x = bounds.origin.x - pt.x
+                                pt.x = -pt.x
                             kerning.setdefault(name, {}).setdefault(ext, []).append(pt)
             if e := glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
