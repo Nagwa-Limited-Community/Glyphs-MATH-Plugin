@@ -807,13 +807,14 @@ class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def draw_(self, layer, options):
         try:
+            master = layer.master
+            constants = master.userData.get(CONSTANTS_ID, {})
             names = []
             if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
                 names.append(ITALIC_CORRECTION_ANCHOR)
             if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
                 names.append(TOP_ACCENT_ANCHOR)
 
-            master = layer.master
             scale = 1 / options["Scale"]
             for anchor in layer.anchors:
                 if anchor.name in names:
@@ -843,16 +844,31 @@ class MATHPlugin(GeneralPlugin):
                 points = sorted(points, key=lambda pt: pt.y)
 
                 line = AppKit.NSBezierPath.bezierPath()
-                line.setLineWidth_(scale)
-                AppKit.NSColor.greenColor().set()
+                line.setLineWidth_(scale * 2)
+                if name == KERN_TOP_RIHGT_ANCHOR:
+                    AppKit.NSColor.greenColor().set()
+                elif name == KERN_TOP_LEFT_ANCHOR:
+                    AppKit.NSColor.blueColor().set()
+                elif name == KERN_BOTTOM_RIGHT_ANCHOR:
+                    AppKit.NSColor.cyanColor().set()
+                elif name == KERN_BOTTOM_LEFT_ANCHOR:
+                    AppKit.NSColor.redColor().set()
                 for i, pt in enumerate(points):
                     if i == 0:
-                        line.moveToPoint_((pt.x, master.descender))
+                        y = master.descender
+                        if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                            y = constants.get("SuperscriptBottomMin", 0)
+                        line.moveToPoint_((pt.x, min(pt.y, y)))
                     line.lineToPoint_((pt.x, pt.y))
                     if i < len(points) - 1:
                         line.lineToPoint_((points[i + 1].x, pt.y))
                     else:
-                        line.lineToPoint_((pt.x, master.ascender))
+                        y = 0
+                        if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                            y = constants.get(
+                                "SuperscriptBottomMaxWithSubscript", master.ascender
+                            )
+                        line.lineToPoint_((pt.x, max(pt.y, y)))
                 line.stroke()
         except:
             _message(f"Drawing anchors failed:\n{traceback.format_exc()}")

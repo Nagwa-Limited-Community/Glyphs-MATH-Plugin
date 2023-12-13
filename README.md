@@ -32,11 +32,11 @@ The plug-in adds some new menu entries:
   there is an anchor named `math.ta`.
   This anchor will be used to generate top accent position. Only the
   _x_-position is effective, the _y_-position is ignored.
-* _View → Show MATH Cut-ins_ draws _green_ lines if there anchors starting with
-  the names `math.tr` (top right), `math.tl` (top left), `math.br` (bottom
-  right), `math.bl` (bottom left). There can be more than one anchor starting
-  with each prefix (e.g. `math.tr.1`, `math.tr.2`, etc) each describing one
-  corner of the glyph.
+* _View → Show MATH Cut-ins_ draws _green_, _blue_, _cyan_, and _red_ lines if
+  there are anchors starting with the names `math.tr` (top right), `math.tl`
+  (top left), `math.br` (bottom right), `math.bl` (bottom left). There can be
+  more than one anchor starting with each prefix (e.g. `math.tr.1`,
+  `math.tr.2`, etc) each describing one corner of the glyph.
   Both _x_ and _y_-position of the anchor are used to generate the math kerning
   info.
   ![MATH anchors](math-anchors.png)
