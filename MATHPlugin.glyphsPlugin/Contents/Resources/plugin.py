@@ -415,7 +415,8 @@ class ConstantsWindow:
         width, height = 650, 400
         self._window = window = vanilla.Window(
             (width, height),
-            f"MATH Constants for master ‘{master.name}’ from {master.font.familyName}")
+            f"MATH Constants for master ‘{master.name}’ from {master.font.familyName}",
+        )
         tabs = {
             "General": MATH_CONSTANTS_GENERAL,
             "Sub/Superscript": MATH_CONSTANTS_SCRIPTS,
