@@ -884,32 +884,51 @@ class MATHPlugin(GeneralPlugin):
                     line.stroke()
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]:
-                if userData := layer.parent.userData[f"{PLUGIN_ID}.variants"]:
-                    if assembly := userData.get(V_ASSEMBLY_ID):
-                        self._draw_v_assembly(assembly, layer, scale)
+                if userData := layer.parent.userData[VARIANTS_ID]:
+                    assembly = userData.get(V_ASSEMBLY_ID, [])
+                    variants = userData.get(V_VARIANTS_ID, [])
+                    if assembly or variants:
+                        self._draw_v_variants(variants, assembly, layer, scale)
 
-                    if assembly := userData.get(H_ASSEMBLY_ID):
-                        self._draw_h_assembly(assembly, layer, scale)
+                    assembly = userData.get(H_ASSEMBLY_ID, [])
+                    variants = userData.get(H_VARIANTS_ID, [])
+                    if assembly or variants:
+                        self._draw_h_variants(variants, assembly, layer, scale)
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
     @objc.python_method
-    def _draw_h_assembly(self, recipe, layer, width):
+    def _draw_h_variants(self, variants, assembly, layer, width):
         minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
             "MinConnectorOverlap", 0
         )
+        font = layer.parent.parent
+
+        def gl(obj):
+            if isinstance(obj, GSGlyphReference):
+                return obj.glyph
+            return font.glyphs[obj]
+
         save()
-        translate(layer.width + minoverlap, layer.bounds.origin.y)
-        for gref, flag, bot, top in recipe:
+        AppKit.NSColor.blueColor().set()
+        translate(layer.width, layer.bounds.origin.y)
+
+        for variant in variants:
+            glyph = gl(variant)
+            variant_layer = glyph.layers[layer.layerId]
+            translate(variant_layer.bounds.origin.x, 0)
+            path = variant_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(variant_layer.width, 0)
+
+        translate(minoverlap, 0)
+        for gref, flag, bot, top in assembly:
             translate(-minoverlap, 0)
-            if isinstance(gref, GSGlyphReference):
-                glyph = gref.glyph
-            else:
-                glyph = layer.parent.parent.glyphs[gref]
+            glyph = gl(gref)
             gref_layer = glyph.layers[layer.layerId]
             w, _ = _getMetrics(gref_layer)
             translate(-gref_layer.bounds.origin.x, 0)
-            AppKit.NSColor.blueColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
@@ -917,26 +936,42 @@ class MATHPlugin(GeneralPlugin):
         restore()
 
     @objc.python_method
-    def _draw_v_assembly(self, recipe, layer, width):
+    def _draw_v_variants(self, variants, assembly, layer, width):
+        font = layer.parent.parent
+
+        def gl(obj):
+            if isinstance(obj, GSGlyphReference):
+                return obj.glyph
+            return font.glyphs[obj]
+
+        save()
+        AppKit.NSColor.greenColor().set()
+        translate(layer.width, layer.bounds.origin.y)
+
+        for variant in variants:
+            glyph = gl(variant)
+            variant_layer = glyph.layers[layer.layerId]
+            translate(variant_layer.bounds.origin.x, 0)
+            path = variant_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(variant_layer.width, 0)
+
         minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
             "MinConnectorOverlap", 0
         )
-        save()
-        translate(layer.width, layer.bounds.origin.y + minoverlap)
-        for gref, flag, bot, top in recipe:
+        translate(0, minoverlap)
+        for gref, flag, bot, top in assembly:
             translate(0, -minoverlap)
-            if isinstance(gref, GSGlyphReference):
-                glyph = gref.glyph
-            else:
-                glyph = layer.parent.parent.glyphs[gref]
+            glyph = gl(gref)
             gref_layer = glyph.layers[layer.layerId]
             _, h = _getMetrics(gref_layer)
             translate(0, -gref_layer.bounds.origin.y)
-            AppKit.NSColor.redColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
             translate(0, h)
+
         restore()
 
     @objc.python_method
