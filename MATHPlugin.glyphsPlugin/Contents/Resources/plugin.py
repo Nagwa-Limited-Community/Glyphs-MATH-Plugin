@@ -882,20 +882,23 @@ class MATHPlugin(GeneralPlugin):
         except:
             _message(f"Drawing anchors failed:\n{traceback.format_exc()}")
 
-        draw_variants = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
-        if not draw_variants:
-            return
+        try:
+            draw_variants = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
+            if not draw_variants:
+                return
 
-        plugin_data = layer.parent.userData[f"{PLUGIN_ID}.variants"]
-        if not plugin_data:
-            return
+            plugin_data = layer.parent.userData[f"{PLUGIN_ID}.variants"]
+            if not plugin_data:
+                return
 
-        scale = 1 / options["Scale"]
-        if va := plugin_data.get(V_ASSEMBLY_ID):
-            self._draw_v_assembly(va, layer, scale)
+            scale = 1 / options["Scale"]
+            if va := plugin_data.get(V_ASSEMBLY_ID):
+                self._draw_v_assembly(va, layer, scale)
 
-        if ha := plugin_data.get(H_ASSEMBLY_ID):
-            self._draw_h_assembly(ha, layer, scale)
+            if ha := plugin_data.get(H_ASSEMBLY_ID):
+                self._draw_h_assembly(ha, layer, scale)
+        except:
+            _message(f"Drawing variants failed:\n{traceback.format_exc()}")
 
     @objc.python_method
     def _draw_h_assembly(self, recipe, layer, width):
