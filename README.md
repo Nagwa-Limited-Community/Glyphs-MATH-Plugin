@@ -19,11 +19,11 @@ Usage
 The plug-in adds some new menu entries:
 * _Edit → Edit MATH Constants..._ for editing font-level MATH table constants.
   The constants are saved per-master and should be edited for each master.
-  ![MATH constants dialog](math-constants.png)
+  ![MATH constants dialog](dialog-math-constants.png)
 * _Glyph → Edit MATH Variants..._ for editing glyph-level MATH variants,
   assembly, and extended shape flag.
   The values are saved per-master and should be edited for each master.
-  ![MATH variants dialog](math-variants.png)
+  ![MATH variants dialog](dialog-math-variants.png)
 * _View → Show MATH Italic Correction_ draws a vertical _blue_ line if there is
   an anchor named `math.ic`.
   This anchor will be used to generate italic correction. Only the _x_-position
