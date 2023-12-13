@@ -719,6 +719,9 @@ class MATHPlugin(GeneralPlugin):
         menuItem = self.newMenuItem_("Show MATH Variants", self.toggleShowGV_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
+        menuItem = self.newMenuItem_("Show MATH Assembly", self.toggleShowGA_)
+        Glyphs.menu[VIEW_MENU].append(menuItem)
+
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
@@ -795,6 +798,14 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.redraw()
 
     def toggleShowGV_(self, menuItem):
+        newState = AppKit.NSOnState
+        state = menuItem.state()
+        if state == AppKit.NSOnState:
+            newState = AppKit.NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
+    def toggleShowGA_(self, menuItem):
         newState = AppKit.NSOnState
         state = menuItem.state()
         if state == AppKit.NSOnState:
@@ -883,15 +894,17 @@ class MATHPlugin(GeneralPlugin):
                             line.lineToPoint_((pt.x, max(pt.y, y)))
                     line.stroke()
 
-            if self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]:
+            showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
+            showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
+            if showGV or showGA:
                 if userData := layer.parent.userData[VARIANTS_ID]:
-                    assembly = userData.get(V_ASSEMBLY_ID, [])
-                    variants = userData.get(V_VARIANTS_ID, [])
+                    assembly = userData.get(V_ASSEMBLY_ID, []) if showGA else []
+                    variants = userData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
                         self._draw_variants(variants, assembly, layer, scale, True)
 
-                    assembly = userData.get(H_ASSEMBLY_ID, [])
-                    variants = userData.get(H_VARIANTS_ID, [])
+                    assembly = userData.get(H_ASSEMBLY_ID, []) if showGA else []
+                    variants = userData.get(H_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
                         self._draw_variants(variants, assembly, layer, scale, False)
         except:
