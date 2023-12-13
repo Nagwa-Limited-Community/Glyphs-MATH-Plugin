@@ -24,6 +24,9 @@ The plug-in adds some new menu entries:
   assembly, and extended shape flag.
   The values are saved per-master and should be edited for each master.
   ![MATH variants dialog](dialog-math-variants.png)
+* _View → Show MATH variants_ and _View → Show MATH Assembly_ draw math
+  variants and extensible assemblies.
+  ![MATH variants](math-variants.png)
 * _View → Show MATH Italic Correction_ draws a vertical _blue_ line if there is
   an anchor named `math.ic`.
   This anchor will be used to generate italic correction. Only the _x_-position
