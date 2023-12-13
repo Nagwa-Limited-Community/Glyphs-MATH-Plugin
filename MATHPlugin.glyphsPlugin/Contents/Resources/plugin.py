@@ -21,6 +21,7 @@ from GlyphsApp import (
     GSGlyphReference,
     Message,
 )
+from GlyphsApp.drawingTools import restore, save, strokeWidth, translate
 from GlyphsApp.plugins import GeneralPlugin
 
 NAME = "OpenType MATH Plug-in"
@@ -714,6 +715,9 @@ class MATHPlugin(GeneralPlugin):
         menuItem = self.newMenuItem_("Show MATH Cut-ins", self.toggleShowMK_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
+        menuItem = self.newMenuItem_("Show MATH Variants", self.toggleShowGV_)
+        Glyphs.menu[VIEW_MENU].append(menuItem)
+
         menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
@@ -789,6 +793,14 @@ class MATHPlugin(GeneralPlugin):
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
+    def toggleShowGV_(self, menuItem):
+        newState = NSOnState
+        state = menuItem.state()
+        if state == NSOnState:
+            newState = NSOffState
+        self.setMenuItemState_(menuItem, newState)
+        Glyphs.redraw()
+
     def editFont_(self, menuItem):
         try:
             master = Glyphs.font.selectedFontMaster
@@ -829,50 +841,102 @@ class MATHPlugin(GeneralPlugin):
                         AppKit.NSColor.magentaColor().set()
                     line.stroke()
 
-            if not self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                return
+            if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
+                for name in (
+                    KERN_TOP_RIHGT_ANCHOR,
+                    KERN_TOP_LEFT_ANCHOR,
+                    KERN_BOTTOM_RIGHT_ANCHOR,
+                    KERN_BOTTOM_LEFT_ANCHOR,
+                ):
+                    points = []
+                    for anchor in layer.anchors:
+                        if anchor.name == name or anchor.name.startswith(name + "."):
+                            points.append(anchor.position)
+                    points = sorted(points, key=lambda pt: pt.y)
 
-            for name in (
-                KERN_TOP_RIHGT_ANCHOR,
-                KERN_TOP_LEFT_ANCHOR,
-                KERN_BOTTOM_RIGHT_ANCHOR,
-                KERN_BOTTOM_LEFT_ANCHOR,
-            ):
-                points = []
-                for anchor in layer.anchors:
-                    if anchor.name == name or anchor.name.startswith(name + "."):
-                        points.append(anchor.position)
-                points = sorted(points, key=lambda pt: pt.y)
-
-                line = AppKit.NSBezierPath.bezierPath()
-                line.setLineWidth_(scale * 2)
-                if name == KERN_TOP_RIHGT_ANCHOR:
-                    AppKit.NSColor.greenColor().set()
-                elif name == KERN_TOP_LEFT_ANCHOR:
-                    AppKit.NSColor.blueColor().set()
-                elif name == KERN_BOTTOM_RIGHT_ANCHOR:
-                    AppKit.NSColor.cyanColor().set()
-                elif name == KERN_BOTTOM_LEFT_ANCHOR:
-                    AppKit.NSColor.redColor().set()
-                for i, pt in enumerate(points):
-                    if i == 0:
-                        y = master.descender
-                        if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                            y = constants.get("SuperscriptBottomMin", 0)
-                        line.moveToPoint_((pt.x, min(pt.y, y)))
-                    line.lineToPoint_((pt.x, pt.y))
-                    if i < len(points) - 1:
-                        line.lineToPoint_((points[i + 1].x, pt.y))
-                    else:
-                        y = 0
-                        if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                            y = constants.get(
-                                "SuperscriptBottomMaxWithSubscript", master.ascender
-                            )
-                        line.lineToPoint_((pt.x, max(pt.y, y)))
-                line.stroke()
+                    line = AppKit.NSBezierPath.bezierPath()
+                    line.setLineWidth_(scale * 2)
+                    if name == KERN_TOP_RIHGT_ANCHOR:
+                        AppKit.NSColor.greenColor().set()
+                    elif name == KERN_TOP_LEFT_ANCHOR:
+                        AppKit.NSColor.blueColor().set()
+                    elif name == KERN_BOTTOM_RIGHT_ANCHOR:
+                        AppKit.NSColor.cyanColor().set()
+                    elif name == KERN_BOTTOM_LEFT_ANCHOR:
+                        AppKit.NSColor.redColor().set()
+                    for i, pt in enumerate(points):
+                        if i == 0:
+                            y = master.descender
+                            if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                                y = constants.get("SuperscriptBottomMin", 0)
+                            line.moveToPoint_((pt.x, min(pt.y, y)))
+                        line.lineToPoint_((pt.x, pt.y))
+                        if i < len(points) - 1:
+                            line.lineToPoint_((points[i + 1].x, pt.y))
+                        else:
+                            y = 0
+                            if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                                y = constants.get(
+                                    "SuperscriptBottomMaxWithSubscript", master.ascender
+                                )
+                            line.lineToPoint_((pt.x, max(pt.y, y)))
+                    line.stroke()
         except:
             _message(f"Drawing anchors failed:\n{traceback.format_exc()}")
+
+        try:
+            draw_variants = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
+            if not draw_variants:
+                return
+
+            plugin_data = layer.parent.userData[f"{PLUGIN_ID}.variants"]
+            if not plugin_data:
+                return
+
+            scale = 1 / options["Scale"]
+            if va := plugin_data.get(V_ASSEMBLY_ID):
+                self._draw_v_assembly(va, layer, scale)
+
+            if ha := plugin_data.get(H_ASSEMBLY_ID):
+                self._draw_h_assembly(ha, layer, scale)
+        except:
+            _message(f"Drawing variants failed:\n{traceback.format_exc()}")
+
+    @objc.python_method
+    def _draw_h_assembly(self, recipe, layer, width):
+        save()
+        translate(layer.width, layer.bounds.origin.y)
+        for gref, flag, bot, top in recipe:
+            if isinstance(gref, GSGlyphReference):
+                glyph = gref.glyph
+            else:
+                glyph = layer.parent.parent.glyphs[gref]
+            gref_layer = glyph.layers[layer.layerId]
+            translate(-gref_layer.bounds.origin.x, 0)
+            NSColor.blueColor().set()
+            path = gref_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(gref_layer.bounds.size.width + gref_layer.bounds.origin.x, 0)
+        restore()
+
+    @objc.python_method
+    def _draw_v_assembly(self, recipe, layer, width):
+        save()
+        translate(layer.width, 0)
+        for gref, flag, bot, top in recipe:
+            if isinstance(gref, GSGlyphReference):
+                glyph = gref.glyph
+            else:
+                glyph = layer.parent.parent.glyphs[gref]
+            gref_layer = glyph.layers[layer.layerId]
+            translate(0, -gref_layer.bounds.origin.y)
+            NSColor.redColor().set()
+            path = gref_layer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            translate(0, gref_layer.bounds.size.height + gref_layer.bounds.origin.y)
+        restore()
 
     @objc.python_method
     def open_(self, notification):
