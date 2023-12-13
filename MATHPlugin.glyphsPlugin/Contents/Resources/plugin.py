@@ -21,7 +21,7 @@ from GlyphsApp import (
     GSGlyphReference,
     Message,
 )
-from GlyphsApp.drawingTools import restore, save, strokeWidth, translate
+from GlyphsApp.drawingTools import restore, save, translate
 from GlyphsApp.plugins import GeneralPlugin
 
 NAME = "OpenType MATH Plug-in"
