@@ -895,38 +895,48 @@ class MATHPlugin(GeneralPlugin):
 
     @objc.python_method
     def _draw_h_assembly(self, recipe, layer, width):
+        minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
+            "MinConnectorOverlap", 0
+        )
         save()
-        translate(layer.width, layer.bounds.origin.y)
+        translate(layer.width + minoverlap, layer.bounds.origin.y)
         for gref, flag, bot, top in recipe:
+            translate(-minoverlap, 0)
             if isinstance(gref, GSGlyphReference):
                 glyph = gref.glyph
             else:
                 glyph = layer.parent.parent.glyphs[gref]
             gref_layer = glyph.layers[layer.layerId]
+            w, _ = _getMetrics(gref_layer)
             translate(-gref_layer.bounds.origin.x, 0)
             AppKit.NSColor.blueColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
-            translate(gref_layer.bounds.size.width + gref_layer.bounds.origin.x, 0)
+            translate(w, 0)
         restore()
 
     @objc.python_method
     def _draw_v_assembly(self, recipe, layer, width):
+        minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
+            "MinConnectorOverlap", 0
+        )
         save()
-        translate(layer.width, 0)
+        translate(layer.width, layer.bounds.origin.y + minoverlap)
         for gref, flag, bot, top in recipe:
+            translate(0, -minoverlap)
             if isinstance(gref, GSGlyphReference):
                 glyph = gref.glyph
             else:
                 glyph = layer.parent.parent.glyphs[gref]
             gref_layer = glyph.layers[layer.layerId]
+            _, h = _getMetrics(gref_layer)
             translate(0, -gref_layer.bounds.origin.y)
             AppKit.NSColor.redColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
-            translate(0, gref_layer.bounds.size.height + gref_layer.bounds.origin.y)
+            translate(0, h)
         restore()
 
     @objc.python_method
