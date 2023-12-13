@@ -795,10 +795,10 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.redraw()
 
     def toggleShowGV_(self, menuItem):
-        newState = NSOnState
+        newState = AppKit.NSOnState
         state = menuItem.state()
-        if state == NSOnState:
-            newState = NSOffState
+        if state == AppKit.NSOnState:
+            newState = AppKit.NSOffState
         self.setMenuItemState_(menuItem, newState)
         Glyphs.redraw()
 
@@ -914,7 +914,7 @@ class MATHPlugin(GeneralPlugin):
                 glyph = layer.parent.parent.glyphs[gref]
             gref_layer = glyph.layers[layer.layerId]
             translate(-gref_layer.bounds.origin.x, 0)
-            NSColor.blueColor().set()
+            AppKit.NSColor.blueColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
@@ -932,7 +932,7 @@ class MATHPlugin(GeneralPlugin):
                 glyph = layer.parent.parent.glyphs[gref]
             gref_layer = glyph.layers[layer.layerId]
             translate(0, -gref_layer.bounds.origin.y)
-            NSColor.redColor().set()
+            AppKit.NSColor.redColor().set()
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
