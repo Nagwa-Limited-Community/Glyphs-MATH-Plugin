@@ -834,24 +834,13 @@ class MATHPlugin(GeneralPlugin):
         try:
             master = layer.master
             constants = master.userData.get(CONSTANTS_ID, {})
-            names = []
-            if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
-                names.append(ITALIC_CORRECTION_ANCHOR)
-            if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
-                names.append(TOP_ACCENT_ANCHOR)
 
             scale = 1 / options["Scale"]
-            for anchor in layer.anchors:
-                if anchor.name in names:
-                    line = AppKit.NSBezierPath.bezierPath()
-                    line.moveToPoint_((anchor.position.x, master.descender))
-                    line.lineToPoint_((anchor.position.x, master.ascender))
-                    line.setLineWidth_(scale)
-                    if anchor.name == ITALIC_CORRECTION_ANCHOR:
-                        AppKit.NSColor.blueColor().set()
-                    elif anchor.name == TOP_ACCENT_ANCHOR:
-                        AppKit.NSColor.magentaColor().set()
-                    line.stroke()
+
+            if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
+                self._drawAnchors(layer, master, ITALIC_CORRECTION_ANCHOR, scale)
+            if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
+                self._drawAnchors(layer, master, TOP_ACCENT_ANCHOR, scale)
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
                 self._drawMathkern(layer, master, constants, scale)
@@ -871,6 +860,19 @@ class MATHPlugin(GeneralPlugin):
                         self._drawVariants(variants, assembly, layer, scale, False)
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
+
+    @staticmethod
+    def _drawAnchors(layer, master, name, width):
+        if anchor := layer.anchors[name]:
+            line = AppKit.NSBezierPath.bezierPath()
+            line.moveToPoint_((anchor.position.x, master.descender))
+            line.lineToPoint_((anchor.position.x, master.ascender))
+            line.setLineWidth_(width)
+            if anchor.name == ITALIC_CORRECTION_ANCHOR:
+                AppKit.NSColor.blueColor().set()
+            elif anchor.name == TOP_ACCENT_ANCHOR:
+                AppKit.NSColor.magentaColor().set()
+            line.stroke()
 
     @objc.python_method
     def _drawMathkern(self, layer, master, constants, width):
