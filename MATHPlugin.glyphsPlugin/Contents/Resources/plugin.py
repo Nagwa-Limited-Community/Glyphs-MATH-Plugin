@@ -206,6 +206,20 @@ MATH_CONSTANTS_TOOLTIPS = {
     "MinConnectorOverlap": "Minimum overlap of connecting glyphs during glyph construction, in design units.",
 }
 
+# Plain TeX accents, used to show to accent cloud
+SAMPLE_MATH_ACCENTS = [
+    "0300",  # \grave
+    "0301",  # \acute
+    "0302",  # \hat
+    "0303",  # \tilde
+    "0304",  # \bar
+    "0306",  # \breve
+    "0307",  # \dot
+    "0308",  # \ddot
+    "030C",  # \check
+    "20D7",  # \vec
+]
+
 
 def _getMetrics(layer):
     width = layer.width
@@ -870,7 +884,37 @@ class MATHPlugin(GeneralPlugin):
                 AppKit.NSColor.blueColor().set()
             elif anchor.name == TOP_ACCENT_ANCHOR:
                 AppKit.NSColor.magentaColor().set()
+                if anchor.selected:
+                    MATHPlugin._drawAccent(layer, master, anchor)
             line.stroke()
+
+    @staticmethod
+    def _drawAccent(layer, master, anchor):
+        save()
+        font = master.font
+
+        constants = master.userData.get(CONSTANTS_ID, {})
+        accentBase = constants.get("AccentBaseHeight", master.xHeight)
+
+        height = layer.bounds.size.height
+        dy = height - min(height, accentBase)
+
+        AppKit.NSColor.colorWithDeviceWhite_alpha_(0, 0.2).set()
+        for name in SAMPLE_MATH_ACCENTS:
+            if glyph := font.glyphs[name]:
+                alayer = glyph.layers[master.id]
+                aanchor = alayer.anchors[anchor.name]
+                if aanchor is None:
+                    continue
+
+                dx = anchor.position.x - aanchor.position.x
+                Transform = AppKit.NSAffineTransform.alloc().init()
+                Transform.translateXBy_yBy_(dx, dy)
+
+                path = alayer.completeBezierPath
+                path.transformUsingAffineTransform_(Transform)
+                path.fill()
+        restore()
 
     @staticmethod
     def _drawMathkern(layer, master, width):
