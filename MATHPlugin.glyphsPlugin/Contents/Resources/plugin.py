@@ -854,45 +854,7 @@ class MATHPlugin(GeneralPlugin):
                     line.stroke()
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                for name in (
-                    KERN_TOP_RIHGT_ANCHOR,
-                    KERN_TOP_LEFT_ANCHOR,
-                    KERN_BOTTOM_RIGHT_ANCHOR,
-                    KERN_BOTTOM_LEFT_ANCHOR,
-                ):
-                    points = []
-                    for anchor in layer.anchors:
-                        if anchor.name == name or anchor.name.startswith(name + "."):
-                            points.append(anchor.position)
-                    points = sorted(points, key=lambda pt: pt.y)
-
-                    line = AppKit.NSBezierPath.bezierPath()
-                    line.setLineWidth_(scale * 2)
-                    if name == KERN_TOP_RIHGT_ANCHOR:
-                        AppKit.NSColor.greenColor().set()
-                    elif name == KERN_TOP_LEFT_ANCHOR:
-                        AppKit.NSColor.blueColor().set()
-                    elif name == KERN_BOTTOM_RIGHT_ANCHOR:
-                        AppKit.NSColor.cyanColor().set()
-                    elif name == KERN_BOTTOM_LEFT_ANCHOR:
-                        AppKit.NSColor.redColor().set()
-                    for i, pt in enumerate(points):
-                        if i == 0:
-                            y = master.descender
-                            if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                                y = constants.get("SuperscriptBottomMin", 0)
-                            line.moveToPoint_((pt.x, min(pt.y, y)))
-                        line.lineToPoint_((pt.x, pt.y))
-                        if i < len(points) - 1:
-                            line.lineToPoint_((points[i + 1].x, pt.y))
-                        else:
-                            y = 0
-                            if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                                y = constants.get(
-                                    "SuperscriptBottomMaxWithSubscript", master.ascender
-                                )
-                            line.lineToPoint_((pt.x, max(pt.y, y)))
-                    line.stroke()
+                self._draw_mathkern(layer, master, constants, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -909,6 +871,48 @@ class MATHPlugin(GeneralPlugin):
                         self._draw_variants(variants, assembly, layer, scale, False)
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
+
+    @objc.python_method
+    def _draw_mathkern(self, layer, master, constants, width):
+        for name in (
+            KERN_TOP_RIHGT_ANCHOR,
+            KERN_TOP_LEFT_ANCHOR,
+            KERN_BOTTOM_RIGHT_ANCHOR,
+            KERN_BOTTOM_LEFT_ANCHOR,
+        ):
+            points = []
+            for anchor in layer.anchors:
+                if anchor.name == name or anchor.name.startswith(name + "."):
+                    points.append(anchor.position)
+            points = sorted(points, key=lambda pt: pt.y)
+
+            line = AppKit.NSBezierPath.bezierPath()
+            line.setLineWidth_(width * 2)
+            if name == KERN_TOP_RIHGT_ANCHOR:
+                AppKit.NSColor.greenColor().set()
+            elif name == KERN_TOP_LEFT_ANCHOR:
+                AppKit.NSColor.blueColor().set()
+            elif name == KERN_BOTTOM_RIGHT_ANCHOR:
+                AppKit.NSColor.cyanColor().set()
+            elif name == KERN_BOTTOM_LEFT_ANCHOR:
+                AppKit.NSColor.redColor().set()
+            for i, pt in enumerate(points):
+                if i == 0:
+                    y = master.descender
+                    if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                        y = constants.get("SuperscriptBottomMin", 0)
+                    line.moveToPoint_((pt.x, min(pt.y, y)))
+                line.lineToPoint_((pt.x, pt.y))
+                if i < len(points) - 1:
+                    line.lineToPoint_((points[i + 1].x, pt.y))
+                else:
+                    y = 0
+                    if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                        y = constants.get(
+                            "SuperscriptBottomMaxWithSubscript", master.ascender
+                        )
+                    line.lineToPoint_((pt.x, max(pt.y, y)))
+            line.stroke()
 
     @objc.python_method
     def _draw_variants(self, variants, assembly, layer, width, vertical):
