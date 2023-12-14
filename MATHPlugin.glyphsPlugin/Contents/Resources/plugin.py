@@ -533,7 +533,6 @@ class ConstantsWindow:
         elif constant == "DisplayOperatorMinHeight":
             # display "summation" height
             if (glyph := font.glyphs["\u2211"]) is not None:
-                print(glyph)
                 if varData := glyph.userData[VARIANTS_ID]:
                     if vvars := varData.get(V_VARIANTS_ID):
                         value = vvars[1].glyph.layers[master.id].bounds.size.height
