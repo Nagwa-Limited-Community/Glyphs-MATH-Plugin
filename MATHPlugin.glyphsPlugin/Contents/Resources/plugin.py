@@ -875,6 +875,7 @@ class MATHPlugin(GeneralPlugin):
 
     @staticmethod
     def _drawAnchors(layer, master, name, width):
+        save()
         if anchor := layer.anchors[name]:
             line = AppKit.NSBezierPath.bezierPath()
             line.moveToPoint_((anchor.position.x, master.descender))
@@ -887,6 +888,7 @@ class MATHPlugin(GeneralPlugin):
                 if anchor.selected:
                     MATHPlugin._drawAccent(layer, master, anchor)
             line.stroke()
+        restore()
 
     @staticmethod
     def _drawAccent(layer, master, anchor):
@@ -918,6 +920,7 @@ class MATHPlugin(GeneralPlugin):
 
     @staticmethod
     def _drawMathkern(layer, master, width):
+        save()
         constants = master.userData.get(CONSTANTS_ID, {})
         for name in (
             KERN_TOP_RIHGT_ANCHOR,
@@ -958,9 +961,11 @@ class MATHPlugin(GeneralPlugin):
                         )
                     line.lineToPoint_((pt.x, max(pt.y, y)))
             line.stroke()
+        restore()
 
     @staticmethod
     def _drawVariants(variants, assembly, layer, width, vertical):
+        save()
         font = layer.parent.parent
 
         def gl(obj):
@@ -968,7 +973,6 @@ class MATHPlugin(GeneralPlugin):
                 return obj.glyph
             return font.glyphs[obj]
 
-        save()
         if vertical:
             AppKit.NSColor.greenColor().set()
         else:
