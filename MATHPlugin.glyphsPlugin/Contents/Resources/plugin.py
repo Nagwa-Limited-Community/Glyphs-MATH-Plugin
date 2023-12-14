@@ -874,8 +874,8 @@ class MATHPlugin(GeneralPlugin):
                 AppKit.NSColor.magentaColor().set()
             line.stroke()
 
-    @objc.python_method
-    def _drawMathkern(self, layer, master, constants, width):
+    @staticmethod
+    def _drawMathkern(layer, master, constants, width):
         for name in (
             KERN_TOP_RIHGT_ANCHOR,
             KERN_TOP_LEFT_ANCHOR,
@@ -916,8 +916,8 @@ class MATHPlugin(GeneralPlugin):
                     line.lineToPoint_((pt.x, max(pt.y, y)))
             line.stroke()
 
-    @objc.python_method
-    def _drawVariants(self, variants, assembly, layer, width, vertical):
+    @staticmethod
+    def _drawVariants(variants, assembly, layer, width, vertical):
         font = layer.parent.parent
 
         def gl(obj):
