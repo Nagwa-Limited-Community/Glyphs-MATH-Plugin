@@ -846,16 +846,15 @@ class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def draw_(self, layer, options):
         try:
-            master = layer.master
             scale = 1 / options["Scale"]
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
-                self._drawAnchors(layer, master, ITALIC_CORRECTION_ANCHOR, scale)
+                self._drawAnchors(layer, ITALIC_CORRECTION_ANCHOR, scale)
             if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
-                self._drawAnchors(layer, master, TOP_ACCENT_ANCHOR, scale)
+                self._drawAnchors(layer, TOP_ACCENT_ANCHOR, scale)
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                self._drawMathkern(layer, master, scale)
+                self._drawMathkern(layer, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -873,9 +872,10 @@ class MATHPlugin(GeneralPlugin):
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
-    @staticmethod
-    def _drawAnchors(layer, master, name, width):
+    @objc.python_method
+    def _drawAnchors(self, layer, name, width):
         save()
+        master = layer.master
         if anchor := layer.anchors[name]:
             line = AppKit.NSBezierPath.bezierPath()
             line.moveToPoint_((anchor.position.x, master.descender))
@@ -886,13 +886,14 @@ class MATHPlugin(GeneralPlugin):
             elif anchor.name == TOP_ACCENT_ANCHOR:
                 AppKit.NSColor.magentaColor().set()
                 if anchor.selected:
-                    MATHPlugin._drawAccent(layer, master, anchor)
+                    self._drawAccent(layer, anchor)
             line.stroke()
         restore()
 
     @staticmethod
-    def _drawAccent(layer, master, anchor):
+    def _drawAccent(layer, anchor):
         save()
+        master = layer.master
         font = master.font
 
         constants = master.userData.get(CONSTANTS_ID, {})
@@ -919,8 +920,9 @@ class MATHPlugin(GeneralPlugin):
         restore()
 
     @staticmethod
-    def _drawMathkern(layer, master, width):
+    def _drawMathkern(layer, width):
         save()
+        master = layer.master
         constants = master.userData.get(CONSTANTS_ID, {})
         for name in (
             KERN_TOP_RIHGT_ANCHOR,
