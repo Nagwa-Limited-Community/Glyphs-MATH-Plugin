@@ -854,7 +854,7 @@ class MATHPlugin(GeneralPlugin):
                     line.stroke()
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                self._draw_mathkern(layer, master, constants, scale)
+                self._drawMathkern(layer, master, constants, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -863,17 +863,17 @@ class MATHPlugin(GeneralPlugin):
                     assembly = userData.get(V_ASSEMBLY_ID, []) if showGA else []
                     variants = userData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
-                        self._draw_variants(variants, assembly, layer, scale, True)
+                        self._drawVariants(variants, assembly, layer, scale, True)
 
                     assembly = userData.get(H_ASSEMBLY_ID, []) if showGA else []
                     variants = userData.get(H_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
-                        self._draw_variants(variants, assembly, layer, scale, False)
+                        self._drawVariants(variants, assembly, layer, scale, False)
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
     @objc.python_method
-    def _draw_mathkern(self, layer, master, constants, width):
+    def _drawMathkern(self, layer, master, constants, width):
         for name in (
             KERN_TOP_RIHGT_ANCHOR,
             KERN_TOP_LEFT_ANCHOR,
@@ -915,7 +915,7 @@ class MATHPlugin(GeneralPlugin):
             line.stroke()
 
     @objc.python_method
-    def _draw_variants(self, variants, assembly, layer, width, vertical):
+    def _drawVariants(self, variants, assembly, layer, width, vertical):
         font = layer.parent.parent
 
         def gl(obj):
@@ -982,7 +982,7 @@ class MATHPlugin(GeneralPlugin):
                 pass
             else:
                 try:
-                    self.import_(font, ttFont)
+                    self._import(font, ttFont)
                 except Exception as ex:
                     raise ex
                 finally:
@@ -1012,7 +1012,7 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Opening failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def import_(font, ttFont):
+    def _import(font, ttFont):
         if "MATH" not in ttFont:
             return
 
@@ -1173,7 +1173,7 @@ class MATHPlugin(GeneralPlugin):
 
             font = instance.interpolatedFont
             with TTFont(path) as ttFont:
-                self.build_(font, ttFont)
+                self._build(font, ttFont)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1181,7 +1181,7 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Export failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def build_(font, ttFont):
+    def _build(font, ttFont):
         instance = font.instances[0]
         master = font.masters[0]
         userData = master.userData.get(CONSTANTS_ID, {})
