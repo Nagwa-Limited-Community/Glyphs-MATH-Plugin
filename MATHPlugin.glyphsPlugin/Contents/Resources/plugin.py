@@ -977,8 +977,18 @@ class MATHPlugin(GeneralPlugin):
             except Exception:
                 pass
             else:
-                self.import_(font, ttFont)
-                ttFont.close()
+                try:
+                    self.import_(font, ttFont)
+                except Exception as ex:
+                    raise ex
+                finally:
+                    ttFont.close()
+                    # Mark font/all glyphs as unchanged
+                    for glyph in font.glyphs:
+                        glyph.undoManager().removeAllActions()
+                        glyph.updateChangeCount_(AppKit.NSChangeCleared)
+                    font.undoManager().removeAllActions()
+                    font.parent.updateChangeCount_(AppKit.NSChangeCleared)
 
             def gn(n):
                 return GSGlyphReference(font.glyphs[n])
