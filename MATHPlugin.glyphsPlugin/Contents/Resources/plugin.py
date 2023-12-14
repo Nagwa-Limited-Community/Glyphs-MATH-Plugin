@@ -833,8 +833,6 @@ class MATHPlugin(GeneralPlugin):
     def draw_(self, layer, options):
         try:
             master = layer.master
-            constants = master.userData.get(CONSTANTS_ID, {})
-
             scale = 1 / options["Scale"]
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
@@ -843,7 +841,7 @@ class MATHPlugin(GeneralPlugin):
                 self._drawAnchors(layer, master, TOP_ACCENT_ANCHOR, scale)
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                self._drawMathkern(layer, master, constants, scale)
+                self._drawMathkern(layer, master, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -875,7 +873,8 @@ class MATHPlugin(GeneralPlugin):
             line.stroke()
 
     @staticmethod
-    def _drawMathkern(layer, master, constants, width):
+    def _drawMathkern(layer, master, width):
+        constants = master.userData.get(CONSTANTS_ID, {})
         for name in (
             KERN_TOP_RIHGT_ANCHOR,
             KERN_TOP_LEFT_ANCHOR,
