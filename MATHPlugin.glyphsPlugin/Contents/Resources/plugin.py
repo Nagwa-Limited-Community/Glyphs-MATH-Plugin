@@ -470,9 +470,9 @@ class ConstantsWindow:
                 box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
                 box.edit.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
 
-                box.button = vanilla.ImageButton(
+                box.button = vanilla.Button(
                     "auto",
-                    imageNamed=AppKit.NSImageNameRefreshTemplate,
+                    "🪄",
                     callback=self._guessCallback,
                 )
                 box.button.getNSButton().setToolTip_("Guess value")
