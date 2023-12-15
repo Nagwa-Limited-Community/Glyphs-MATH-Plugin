@@ -530,20 +530,18 @@ class ConstantsWindow:
         elif constant == "SubscriptTopMax":
             value = master.xHeight * 4 / 5
         elif constant == "SubscriptBaselineDropMin":
-            # TODO
-            # value = -master.descender
-            pass
+            if (value := self._getConstant("SubscriptShiftDown")) is not None:
+                value *= 3 / 4
         elif constant == "SuperscriptShiftUp":
             value = master.customParameters["superscriptYOffset"]
         elif constant == "SuperscriptShiftUpCramped":
-            # TODO: check if this is correct
-            value = master.customParameters["superscriptYOffset"]
+            if (value := self._getConstant("SuperscriptShiftUp")) is not None:
+                value *= 3 / 4
         elif constant == "SuperscriptBottomMin":
             value = master.xHeight / 4
         elif constant == "SuperscriptBaselineDropMax":
-            # TODO
-            # value = master.ascender
-            pass
+            if (v := self._getConstant("SuperscriptShiftUp")) is not None:
+                value = master.capHeight - v
         elif constant == "SubSuperscriptGapMin":
             if (rule := self._getConstant("FractionRuleThickness")) is not None:
                 value = rule * 4
@@ -552,29 +550,22 @@ class ConstantsWindow:
         elif constant == "SpaceAfterScript":
             value = font.upm / 24
         elif constant == "UpperLimitGapMin":
-            # TODO
-            pass
+            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+                value = rule * 2
         elif constant == "UpperLimitBaselineRiseMin":
-            # TODO
-            pass
+            value = -master.descender * 3 / 4
         elif constant == "LowerLimitGapMin":
-            # TODO
-            pass
+            value = self._getConstant("UpperLimitGapMin")
         elif constant == "LowerLimitBaselineDropMin":
-            # TODO
-            pass
+            value = master.ascender * 3 / 4
         elif constant == "StackTopShiftUp":
-            # TODO
-            pass
+            value = master.xHeight
         elif constant == "StackTopDisplayStyleShiftUp":
-            # TODO
-            pass
+            value = master.xHeight * 3 / 2
         elif constant == "StackBottomShiftDown":
-            # TODO
-            pass
+            value = master.capHeight * 2 / 3
         elif constant == "StackBottomDisplayStyleShiftDown":
-            # TODO
-            pass
+            value = master.capHeight
         elif constant == "StackGapMin":
             if (rule := self._getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
@@ -582,23 +573,19 @@ class ConstantsWindow:
             if (rule := self._getConstant("FractionRuleThickness")) is not None:
                 value = rule * 7
         elif constant == "StretchStackTopShiftUp":
-            # TODO
-            pass
+            value = self._getConstant("UpperLimitBaselineRiseMin")
         elif constant == "StretchStackBottomShiftDown":
-            # TODO
-            pass
+            value = self._getConstant("LowerLimitBaselineDropMin")
         elif constant == "StretchStackGapAboveMin":
             value = self._getConstant("UpperLimitGapMin")
         elif constant == "StretchStackGapBelowMin":
             value = self._getConstant("LowerLimitGapMin")
         elif constant == "FractionNumeratorShiftUp":
-            # TODO
-            pass
+            value = self._getConstant("StackTopShiftUp")
         elif constant == "FractionNumeratorDisplayStyleShiftUp":
             value = self._getConstant("StackTopDisplayStyleShiftUp")
         elif constant == "FractionDenominatorShiftDown":
-            # TODO
-            pass
+            value = self._getConstant("StackBottomShiftDown")
         elif constant == "FractionDenominatorDisplayStyleShiftDown":
             value = self._getConstant("StackBottomDisplayStyleShiftDown")
         elif constant == "FractionNumeratorGapMin":
