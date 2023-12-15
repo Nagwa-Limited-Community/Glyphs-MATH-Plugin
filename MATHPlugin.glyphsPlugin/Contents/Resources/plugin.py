@@ -509,7 +509,7 @@ class ConstantsWindow:
             value = (master.ascender - master.descender) * 1.5
         elif constant == "DisplayOperatorMinHeight":
             # display "summation" height
-            if (glyph := font.glyphs["\u2211"]) is not None:
+            if (glyph := font.glyphs["∑"]) is not None:
                 if varData := glyph.userData[VARIANTS_ID]:
                     if vvars := varData.get(V_VARIANTS_ID):
                         value = vvars[1].glyph.layers[master.id].bounds.size.height
@@ -518,7 +518,7 @@ class ConstantsWindow:
                 value = master.customParameters["hheaLineGap"]
         elif constant == "AxisHeight":
             # "minus" midline
-            if (glyph := font.glyphs["\u2212"]) is not None:
+            if (glyph := font.glyphs["−"]) is not None:
                 bounds = glyph.layers[master.id].bounds
                 value = bounds.origin.y + bounds.size.height / 2
         elif constant == "AccentBaseHeight":
@@ -607,7 +607,8 @@ class ConstantsWindow:
             if (rule := self._getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "FractionRuleThickness":
-            if (glyph := master.font.glyphs["221A"]) is not None:
+            # "radical" top connecting part
+            if (glyph := master.font.glyphs["√"]) is not None:
                 layer = glyph.layers[master.id]
                 paths = layer.paths
                 if len(paths):
