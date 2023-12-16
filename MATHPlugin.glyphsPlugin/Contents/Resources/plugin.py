@@ -287,6 +287,14 @@ class VariantsWindow:
                 "auto", [{"view": abox}, {"view": abutton, "width": 24}]
             )
 
+            prev = vanilla.Button("auto", "⬅️", callback=self._prevCallback)
+            next = vanilla.Button("auto", "➡️", callback=self._nextCallback)
+            prev.bind("[", ["command"])
+            next.bind("]", ["command"])
+            setattr(self, f"prev{i}", prev)
+            setattr(self, f"next{i}", next)
+            tab.prevnext = vanilla.HorizontalStackView("auto", [prev, next])
+
             tab.alist = vanilla.List(
                 "auto",
                 [],
@@ -313,19 +321,21 @@ class VariantsWindow:
                 doubleClickCallback=self._listDoubleClickCallback,
             )
             tab.alist.getNSTableView().setTag_(i)
+
+            tab.check = vanilla.CheckBox(
+                "auto", "Extended shape", callback=self._checkBoxCallback
+            )
+            tab.check.show(i == 0)
+
             rules = [
-                "V:|-[vstack]-[vedit(40)]-[astack]-[alist]-|",
+                "V:|-[vstack]-[vedit(40)]-[astack]-[alist]-[check]-[prevnext]-|",
                 f"H:|-[vstack({width})]-|",
                 "H:|-[vedit]-|",
                 f"H:|-[astack({width})]-|",
                 "H:|-[alist]-|",
+                "H:|-[check]-|",
+                "H:|-[prevnext]-|",
             ]
-            if i == 0:
-                tab.check = vanilla.CheckBox(
-                    "auto", "Extended shape", callback=self._checkBoxCallback
-                )
-                rules[0] = rules[0][:-1] + "[check]-|"
-                rules.append("|-[check]-|")
             tab.addAutoPosSizeRules(rules)
 
         if varData := glyph.userData[VARIANTS_ID]:
@@ -358,6 +368,35 @@ class VariantsWindow:
     def _glyphRef(self, name):
         try:
             return GSGlyphReference(self._glyph.parent.glyphs[name])
+        except:
+            _message(traceback.format_exc())
+
+    def _open(self, glyph):
+        posSize = self._window.getPosSize()
+        selected = self._window.tabs.get()
+        self._window.close()
+        window = VariantsWindow(glyph)
+        window._window.setPosSize(posSize)
+        window._window.tabs.set(selected)
+        window.open()
+
+    def _nextCallback(self, sender):
+        try:
+            font = self._glyph.parent
+            glyphOrder = [g.name for g in font.glyphs]
+            index = glyphOrder.index(self._glyph.name)
+            if index < len(glyphOrder) - 1:
+                self._open(font.glyphs[index + 1])
+        except:
+            _message(traceback.format_exc())
+
+    def _prevCallback(self, sender):
+        try:
+            font = self._glyph.parent
+            glyphOrder = [g.name for g in font.glyphs]
+            index = glyphOrder.index(self._glyph.name)
+            if index > 0:
+                self._open(font.glyphs[index - 1])
         except:
             _message(traceback.format_exc())
 
