@@ -1132,15 +1132,15 @@ class MATHPlugin(GeneralPlugin):
         minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
             "MinConnectorOverlap", 0
         )
+
         if vertical:
-            translate(0, minoverlap)
-        else:
-            translate(minoverlap, 0)
+            # ensure assembly is centered vertically
+            h = sum(gl(a[0]).layers[layer.layerId].bounds.size.height for a in assembly)
+            h -= (len(assembly) - 1) * minoverlap
+            d = layer.bounds.size.height - h
+            translate(0, layer.bounds.origin.y + d / 2)
+
         for gref, flag, bot, top in assembly:
-            if vertical:
-                translate(0, -minoverlap)
-            else:
-                translate(-minoverlap, 0)
             glyph = gl(gref)
             gref_layer = glyph.layers[layer.layerId]
             w, h = _getMetrics(gref_layer)
@@ -1152,9 +1152,9 @@ class MATHPlugin(GeneralPlugin):
             path.setLineWidth_(width)
             path.stroke()
             if vertical:
-                translate(0, h)
+                translate(0, h - minoverlap)
             else:
-                translate(w, 0)
+                translate(w - minoverlap, 0)
 
         restore()
 
