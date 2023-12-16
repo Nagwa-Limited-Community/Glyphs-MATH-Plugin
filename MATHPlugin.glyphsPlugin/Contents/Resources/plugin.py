@@ -592,8 +592,8 @@ class ConstantsWindow:
         elif constant == "DelimitedSubFormulaMinHeight":
             value = (master.ascender - master.descender) * 1.5
         elif constant == "DisplayOperatorMinHeight":
-            # display "summation" height
-            if (glyph := font.glyphs["∑"]) is not None:
+            # display "integral" height
+            if (glyph := font.glyphs["∫"]) is not None:
                 if varData := glyph.userData[VARIANTS_ID]:
                     if vvars := varData.get(V_VARIANTS_ID):
                         value = vvars[1].glyph.layers[master.id].bounds.size.height
