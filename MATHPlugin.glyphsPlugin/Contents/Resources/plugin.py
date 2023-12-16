@@ -256,8 +256,9 @@ GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 class VariantsWindow:
     def __init__(self, glyph):
         self._glyph = glyph
+        width, height = 650, 400
         self._window = window = vanilla.Window(
-            (650, 400),
+            (width, height),
             f"MATH Variants for ‘{self._glyph.name}’ from {glyph.parent.familyName}",
         )
         window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
@@ -265,13 +266,27 @@ class VariantsWindow:
         self._emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
-            tab.vbox = vanilla.TextBox("auto", "Variants:")
+            vbox = vanilla.TextBox("auto", "Variants:")
+            vbutton = vanilla.Button("auto", "🪄", callback=self._guessVariantsCallback)
+            vbutton.getNSButton().setTag_(i)
+            setattr(self, f"vbutton{i}", vbutton)
+            tab.vstack = vanilla.HorizontalStackView(
+                "auto", [{"view": vbox}, {"view": vbutton, "width": 24}]
+            )
+
             tab.vedit = vanilla.EditText(
                 "auto", continuous=False, callback=self._editTextCallback
             )
             tab.vedit.getNSTextField().setTag_(i)
 
-            tab.abox = vanilla.TextBox("auto", "Assembly:")
+            abox = vanilla.TextBox("auto", "Assembly:")
+            abutton = vanilla.Button("auto", "🪄", callback=self._guessAssemblyCallback)
+            abutton.getNSButton().setTag_(i)
+            setattr(self, f"abutton{i}", abutton)
+            tab.astack = vanilla.HorizontalStackView(
+                "auto", [{"view": abox}, {"view": abutton, "width": 24}]
+            )
+
             tab.alist = vanilla.List(
                 "auto",
                 [],
@@ -299,10 +314,10 @@ class VariantsWindow:
             )
             tab.alist.getNSTableView().setTag_(i)
             rules = [
-                "V:|-[vbox]-[vedit(40)]-[abox]-[alist]-|",
-                "H:|-[vbox]-|",
+                "V:|-[vstack]-[vedit(40)]-[astack]-[alist]-|",
+                f"H:|-[vstack({width})]-|",
                 "H:|-[vedit]-|",
-                "H:|-[abox]-|",
+                f"H:|-[astack({width})]-|",
                 "H:|-[alist]-|",
             ]
             if i == 0:
@@ -346,17 +361,47 @@ class VariantsWindow:
         except:
             _message(traceback.format_exc())
 
+    def _guessVariantsCallback(self, sender):
+        try:
+            tag = sender.getNSButton().tag()
+            glyph = self._glyph
+            font = glyph.parent
+            name = glyph.name
+
+            alternates = [g.name for g in font.glyphs if g.name.startswith(name + ".")]
+            if not alternates:
+                return
+
+            suffixes = ["size", "s"]
+            varId = H_VARIANTS_ID if tag else V_VARIANTS_ID
+            if varId == V_VARIANTS_ID:
+                suffixes += ["disp", "display"]
+
+            for suffix in suffixes:
+                prefix = f"{name}.{suffix}"
+                if variants := [a for a in alternates if a.startswith(prefix)]:
+                    tab = self._window.tabs[tag]
+                    tab.vedit.set(" ".join([name] + variants))
+                    self._editTextCallback(tab.vedit)
+                    return
+        except:
+            _message(traceback.format_exc())
+
+    def _guessAssemblyCallback(self, sender):
+        pass
+
     def _editTextCallback(self, sender):
         try:
-            glyph = self._glyph
-            old = ""
             new = sender.get().strip()
+            if not new:
+                return
+
+            glyph = self._glyph
             tag = sender.getNSTextField().tag()
             varData = glyph.userData.get(VARIANTS_ID, {})
             if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
-                old = " ".join(str(v) for v in var)
-            if old == new:
-                return
+                if " ".join(str(v) for v in var) == new:
+                    return
 
             varData = {k: list(v) for k, v in varData.items()}
             var = [self._glyphRef(n) for n in new.split()]
@@ -367,8 +412,6 @@ class VariantsWindow:
 
     def _listEditCallback(self, sender):
         try:
-            glyph = self._glyph
-            old = []
             new = [
                 (
                     self._glyphRef(item["g"]),
@@ -379,13 +422,15 @@ class VariantsWindow:
                 for item in sender.get()
                 if item != self._emptyRow
             ]
+            if not new:
+                return
+
+            glyph = self._glyph
             tag = sender.getNSTableView().tag()
             varData = glyph.userData[VARIANTS_ID]
             if not varData:
                 varData = {}
-            if var := varData.get(H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID):
-                old = var
-            if old == new:
+            if varData.get(H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID) == new:
                 return
             varData = {k: list(v) for k, v in varData.items()}
             varData[H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID] = new
