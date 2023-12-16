@@ -732,8 +732,7 @@ class ConstantsWindow:
         elif constant == "RadicalDegreeBottomRaisePercent":
             value = 60
         elif constant == "MinConnectorOverlap":
-            # TODO
-            pass
+            value = 0.05 * font.upm
 
         return value
 
