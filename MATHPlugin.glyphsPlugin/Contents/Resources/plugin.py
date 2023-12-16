@@ -426,8 +426,87 @@ class VariantsWindow:
         except:
             _message(traceback.format_exc())
 
+    def _guessAssembly(self, assemblyId):
+        glyph = self._glyph
+        font = glyph.parent
+        name = glyph.name
+
+        if assemblyId == V_ASSEMBLY_ID:
+            if (top := font.glyphs[name + ".top"]) is None:
+                return
+            if (bot := font.glyphs[name + ".bot"]) is None:
+                return
+            if (ext := font.glyphs[name + ".ext"]) is None:
+                return
+            if mid := font.glyphs[name + ".mid"]:
+                parts = [bot, ext, mid, ext, top]
+            else:
+                parts = [bot, ext, top]
+        elif assemblyId == H_ASSEMBLY_ID:
+            if (lft := font.glyphs[name + ".lft"]) is None:
+                return
+            if (rgt := font.glyphs[name + ".rgt"]) is None:
+                return
+            if (ext := font.glyphs[name + ".ext"]) is None:
+                return
+            if mid := font.glyphs[name + ".mid"]:
+                parts = [lft, ext, mid, ext, rgt]
+            else:
+                parts = [lft, ext, rgt]
+
+        return parts
+
     def _guessAssemblyCallback(self, sender):
-        pass
+        try:
+            tag = sender.getNSButton().tag()
+
+            assemblyId = H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID
+            if (parts := self._guessAssembly(assemblyId)) is None:
+                # Fallback using legacy encoded assembly parts
+                glyph = self._glyph
+                font = glyph.parent
+                name = glyph.name
+                unicode = glyph.unicode
+
+                names = []
+                if name == "parenleft" or unicode == "0028":
+                    names = ["239D", "239C", "239B"]
+                elif name == "parenright" or unicode == "0029":
+                    names = ["23A0", "239F", "239E"]
+                elif name == "bracketleft" or unicode == "005B":
+                    names = ["23A3", "23A2", "23A1"]
+                elif name == "bracketright" or unicode == "005D":
+                    names = ["23A6", "23A5", "23A4"]
+                elif name == "braceleft" or unicode == "007B":
+                    names = ["23A9", "23AA", "23A8", "23AA", "23A7"]
+                elif name == "braceright" or unicode == "007D":
+                    names = ["23AD", "23AA", "23AC", "23AA", "23AB"]
+                elif name == "integral" or unicode == "222B":
+                    names = ["2321", "23AE", "2320"]
+                elif unicode == "23B0":
+                    names = ["23AD", "23AA", "23A7"]
+                elif unicode == "23B1":
+                    names = ["23A9", "23AA", "23AB"]
+
+                parts = [font.glyphs[n] for n in names]
+                if not all(parts):
+                    return
+
+            if not parts:
+                return
+
+            tab = self._window.tabs[tag]
+            items = []
+            for i, part in enumerate(parts):
+                ext = bool(i % 2)
+                start = 0
+                end = 0
+                items.append({"g": part.name, "f": ext, "s": start, "e": end})
+            tab.alist.set(items)
+            self._listEditCallback(tab.alist)
+            return
+        except:
+            _message(traceback.format_exc())
 
     def _editTextCallback(self, sender):
         try:
