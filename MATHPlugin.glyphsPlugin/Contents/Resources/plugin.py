@@ -1118,8 +1118,8 @@ class MATHPlugin(GeneralPlugin):
             AppKit.NSColor.greenColor().set()
         else:
             AppKit.NSColor.blueColor().set()
-        translate(layer.width, layer.bounds.origin.y)
 
+        translate(layer.width, 0)
         for variant in variants:
             glyph = gl(variant)
             variant_layer = glyph.layers[layer.layerId]
