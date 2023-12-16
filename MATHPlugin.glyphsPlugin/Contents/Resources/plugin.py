@@ -483,6 +483,8 @@ class VariantsWindow:
                     names = ["23AD", "23AA", "23AC", "23AA", "23AB"]
                 elif name == "integral" or unicode == "222B":
                     names = ["2321", "23AE", "2320"]
+                elif name == "radical" or unicode == "221A":
+                    names = ["23B7", "2502", "250C"]
                 elif unicode == "23B0":
                     names = ["23AD", "23AA", "23A7"]
                 elif unicode == "23B1":
