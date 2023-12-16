@@ -1145,14 +1145,11 @@ class MATHPlugin(GeneralPlugin):
         for gref, flag, bot, top in assembly:
             glyph = gl(gref)
             gref_layer = glyph.layers[layer.layerId]
-            w, h = _getMetrics(gref_layer)
-            if vertical:
-                translate(0, -gref_layer.bounds.origin.y)
-            else:
-                translate(-gref_layer.bounds.origin.x, 0)
             path = gref_layer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
+
+            w, h = _getMetrics(gref_layer)
             if vertical:
                 translate(0, h - minoverlap)
             else:
