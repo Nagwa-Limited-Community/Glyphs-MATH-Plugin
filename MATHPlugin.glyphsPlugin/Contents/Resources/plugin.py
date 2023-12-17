@@ -1166,7 +1166,7 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             try:
-                ttFont = TTFont(doc.filePath)
+                ttFont = TTFont(doc.filePath, font.tempData.get("TTCFontIndex", 0))
             except Exception:
                 pass
             else:
