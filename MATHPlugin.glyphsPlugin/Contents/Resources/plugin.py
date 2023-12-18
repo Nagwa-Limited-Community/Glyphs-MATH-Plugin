@@ -1361,10 +1361,10 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
-            interpolatedConstants = self._interpolateConstants(instance)
+            constants = self._interpolateConstants(instance)
 
             with TTFont(path) as ttFont:
-                self._build(font, ttFont, interpolatedConstants)
+                self._build(font, ttFont, constants)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1373,47 +1373,27 @@ class MATHPlugin(GeneralPlugin):
 
     @staticmethod
     def _interpolateConstants(instance):
-        interpolatedConstants = {}
+        font = instance.font
+        constants = {}
         for c in MATH_CONSTANTS:
             value = 0
-            found = False
-            for m, factor in instance.instanceInterpolations.items():
-                if (
-                    v := instance.font.masters[m]
-                    .userData.get(CONSTANTS_ID, {})
-                    .get(c, None)
-                ):
-                    if v is None:
-                        continue
-
-                    found |= True
+            for masterId, factor in instance.instanceInterpolations.items():
+                userData = font.masters[masterId].userData.get(CONSTANTS_ID, {})
+                if v := userData.get(c):
                     value += v * factor
-            if found:
-                interpolatedConstants[c] = round(value)
-        return interpolatedConstants
+            constants[c] = round(value)
+        return constants
 
     @staticmethod
     def _build(font, ttFont, interpolatedConstants):
         instance = font.instances[0]
-        constants = {}
-        found = False
-        if interpolatedConstants:
-            for c in MATH_CONSTANTS:
-                # MinConnectorOverlap is used in MathVariants table below.
-                if c == "MinConnectorOverlap":
-                    continue
-                v = interpolatedConstants.get(c, None)
-                if v is None:
-                    v = 0
-                else:
-                    found = True
-                v = int(v)
-                if c in CONSTANT_INTEGERS:
-                    constants[c] = v
-                else:
-                    constants[c] = _valueRecord(v)
 
-        constants = constants if found else {}
+        # MinConnectorOverlap is used in MathVariants table below.
+        constants = {
+            c: v
+            for c, v in interpolatedConstants.items()
+            if c != "MinConnectorOverlap" and v
+        }
 
         if (
             font.customParameters["Don't use Production Names"]
@@ -1499,7 +1479,10 @@ class MATHPlugin(GeneralPlugin):
 
         if constants:
             table.MathConstants = otTables.MathConstants()
-            for c, v in constants.items():
+            for c in MATH_CONSTANTS:
+                v = constants.get(c, 0)
+                if c not in CONSTANT_INTEGERS:
+                    v = _valueRecord(v)
                 setattr(table.MathConstants, c, v)
 
         glyphOrder = ttFont.getGlyphOrder()
