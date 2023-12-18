@@ -1184,6 +1184,8 @@ class MATHPlugin(GeneralPlugin):
                     font.parent.updateChangeCount_(AppKit.NSChangeCleared)
 
             def gn(n):
+                if isinstance(n, GSGlyphReference):
+                    return n
                 return GSGlyphReference(font.glyphs[n])
 
             for glyph in font.glyphs:
