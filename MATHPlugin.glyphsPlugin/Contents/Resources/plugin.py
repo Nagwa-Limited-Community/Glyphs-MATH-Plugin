@@ -1376,6 +1376,7 @@ class MATHPlugin(GeneralPlugin):
         interpolatedConstants = {}
         for c in MATH_CONSTANTS:
             value = 0
+            found = False
             for m, factor in instance.instanceInterpolations.items():
                 if (
                     v := instance.font.masters[m]
@@ -1385,8 +1386,10 @@ class MATHPlugin(GeneralPlugin):
                     if v is None:
                         continue
 
+                    found |= True
                     value += v * factor
-            interpolatedConstants[c] = round(value)
+            if found:
+                interpolatedConstants[c] = round(value)
         return interpolatedConstants
 
     @staticmethod
