@@ -1412,7 +1412,6 @@ class MATHPlugin(GeneralPlugin):
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             layer = glyph.layers[0]
-            bounds = layer.bounds
             for anchor in layer.anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
                     italic[name] = _valueRecord(anchor.position.x - layer.width)
@@ -1433,7 +1432,7 @@ class MATHPlugin(GeneralPlugin):
                             elif ext.endswith("l"):
                                 pt.x = -pt.x
                             kerning.setdefault(name, {}).setdefault(ext, []).append(pt)
-            if e := glyph.userData[EXTENDED_SHAPE_ID]:
+            if glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
 
         vvariants = {}
