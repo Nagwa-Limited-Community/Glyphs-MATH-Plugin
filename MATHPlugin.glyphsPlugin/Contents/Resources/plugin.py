@@ -1361,8 +1361,10 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
+            interpolatedConstants = self._interpolateConstants(instance)
+
             with TTFont(path) as ttFont:
-                self._build(font, ttFont)
+                self._build(font, ttFont, interpolatedConstants)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1370,19 +1372,37 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Export failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def _build(font, ttFont):
-        instance = font.instances[0]
-        master = font.masters[0]
-        userData = master.userData.get(CONSTANTS_ID, {})
+    def _interpolateConstants(instance):
+        interpolatedConstants = {}
+        for c in MATH_CONSTANTS:
+            value = 0
+            found = False
+            for m, factor in instance.instanceInterpolations.items():
+                if (
+                    v := instance.font.masters[m]
+                    .userData.get(CONSTANTS_ID, {})
+                    .get(c, None)
+                ):
+                    if v is None:
+                        continue
 
+                    found |= True
+                    value += v * factor
+            if found:
+                interpolatedConstants[c] = round(value)
+        return interpolatedConstants
+
+    @staticmethod
+    def _build(font, ttFont, interpolatedConstants):
+        instance = font.instances[0]
         constants = {}
         found = False
-        if userData:
+        if interpolatedConstants:
             for c in MATH_CONSTANTS:
                 # MinConnectorOverlap is used in MathVariants table below.
                 if c == "MinConnectorOverlap":
                     continue
-                v = userData.get(c, None)
+                v = interpolatedConstants.get(c, None)
                 if v is None:
                     v = 0
                 else:
@@ -1529,7 +1549,7 @@ class MATHPlugin(GeneralPlugin):
 
         if any([vvariants, hvariants, vassemblies, hassemblies]):
             table.MathVariants = otTables.MathVariants()
-            overlap = userData.get("MinConnectorOverlap", 0)
+            overlap = interpolatedConstants.get("MinConnectorOverlap", 0)
             table.MathVariants.MinConnectorOverlap = overlap
 
         for vertical, variants, assemblies in (
