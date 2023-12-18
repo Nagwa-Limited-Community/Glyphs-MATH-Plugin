@@ -1385,10 +1385,8 @@ class MATHPlugin(GeneralPlugin):
                     if v is None:
                         continue
 
-                    print(f"value = {value} + {v} * {factor}")
                     value += v * factor
             interpolatedConstants[c] = round(value)
-        print(interpolatedConstants)
         return interpolatedConstants
 
     @staticmethod
