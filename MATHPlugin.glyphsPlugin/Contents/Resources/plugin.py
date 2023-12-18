@@ -1361,6 +1361,8 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
+            self.interpolateConstants(instance)
+
             with TTFont(path) as ttFont:
                 self._build(font, ttFont)
                 if "MATH" in ttFont:
@@ -1368,6 +1370,24 @@ class MATHPlugin(GeneralPlugin):
                     self.notification_("MATH table exported successfully")
         except:
             _message(f"Export failed:\n{traceback.format_exc()}")
+    
+    @objc.python_method
+    def interpolateConstants(self, instance):
+        userData = instance.userData.get(CONSTANTS_ID, {})
+        font = instance.font
+        interpolated_constants = {}
+        for c in MATH_CONSTANTS:
+            value = 0
+            for master, factor in instance.instanceInterpolation.items():
+                if userData := font.masters[master].userData.get(CONSTANTS_ID, {}):
+                    v = userData.get(c, None)
+                    if v is None:
+                        continue
+
+                    value += v * factor
+            interpolated_constants[c] = value
+        print(interpolated_constants)
+        return interpolated_constants
 
     @staticmethod
     def _build(font, ttFont):
