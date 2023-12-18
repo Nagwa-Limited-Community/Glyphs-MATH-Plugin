@@ -426,12 +426,12 @@ class VariantsWindow:
         except:
             _message(traceback.format_exc())
 
-    def _guessAssembly(self, assemblyId):
+    def _guessAssembly(self, vertical):
         glyph = self._glyph
         font = glyph.parent
         name = glyph.name
 
-        if assemblyId == V_ASSEMBLY_ID:
+        if vertical:
             if (top := font.glyphs[name + ".top"]) is None:
                 return
             if (bot := font.glyphs[name + ".bot"]) is None:
@@ -442,7 +442,7 @@ class VariantsWindow:
                 parts = [bot, ext, mid, ext, top]
             else:
                 parts = [bot, ext, top]
-        elif assemblyId == H_ASSEMBLY_ID:
+        else:
             if (lft := font.glyphs[name + ".lft"]) is None:
                 return
             if (rgt := font.glyphs[name + ".rgt"]) is None:
@@ -461,7 +461,8 @@ class VariantsWindow:
             tag = sender.getNSButton().tag()
 
             assemblyId = H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID
-            if (parts := self._guessAssembly(assemblyId)) is None:
+            vertical = assemblyId == V_ASSEMBLY_ID
+            if (parts := self._guessAssembly(vertical)) is None:
                 # Fallback using legacy encoded assembly parts
                 glyph = self._glyph
                 font = glyph.parent
