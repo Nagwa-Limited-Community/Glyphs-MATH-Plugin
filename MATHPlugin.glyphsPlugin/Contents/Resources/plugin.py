@@ -1361,10 +1361,10 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
-            self.interpolateConstants(instance)
+            interpolatedConstants = self.interpolateConstants(instance)
 
             with TTFont(path) as ttFont:
-                self._build(font, ttFont)
+                self._build(font, ttFont, interpolatedConstants)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1375,25 +1375,27 @@ class MATHPlugin(GeneralPlugin):
     def interpolateConstants(self, instance):
         userData = instance.userData.get(CONSTANTS_ID, {})
         font = instance.font
-        interpolated_constants = {}
+        interpolatedConstants = {}
         for c in MATH_CONSTANTS:
             value = 0
-            for master, factor in instance.instanceInterpolation.items():
+            for master, factor in instance.instanceInterpolations.items():
                 if userData := font.masters[master].userData.get(CONSTANTS_ID, {}):
                     v = userData.get(c, None)
                     if v is None:
                         continue
 
                     value += v * factor
-            interpolated_constants[c] = value
-        print(interpolated_constants)
-        return interpolated_constants
+            interpolatedConstants[c] = round(value)
+        return interpolatedConstants
 
     @staticmethod
-    def _build(font, ttFont):
+    def _build(font, ttFont, interpolatedConstants=None):
         instance = font.instances[0]
         master = font.masters[0]
-        userData = master.userData.get(CONSTANTS_ID, {})
+        if interpolatedConstants is None:
+            userData = master.userData.get(CONSTANTS_ID, {})
+        else:
+            userData = interpolatedConstants
 
         constants = {}
         found = False
