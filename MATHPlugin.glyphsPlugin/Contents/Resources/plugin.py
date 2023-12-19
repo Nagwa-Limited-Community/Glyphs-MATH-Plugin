@@ -1402,10 +1402,10 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
-            constants = self.interpolateConstants(instance)
+            self.interpolateMathData(instance)
 
             with TTFont(path) as ttFont:
-                self.buildMathTable(font, ttFont, constants)
+                self.buildMathTable(font, ttFont)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1413,8 +1413,11 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Export failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def interpolateConstants(instance):
+    def interpolateMathData(instance):
         font = instance.font
+        master = font.masters[0]
+
+        # Interpolate math constants
         constants = {}
         for c in MATH_CONSTANTS:
             value = 0
@@ -1423,18 +1426,50 @@ class MATHPlugin(GeneralPlugin):
                 if v := userData.get(c):
                     value += v * factor
             constants[c] = round(value)
-        return constants
+        master.userData[CONSTANTS_ID] = dict(constants)
+
+        # Interpolate start and end connector lengths of assemblies
+        for glyph in font.glyphs:
+            layer = glyph.layers[master.id]
+            if varData := layer.userData.get(VARIANTS_ID, {}):
+                if hassembly := varData.get(H_ASSEMBLY_ID):
+                    for i, _ in enumerate(hassembly):
+                        start = 0
+                        end = 0
+                        for masterId, factor in instance.instanceInterpolations.items():
+                            masterAssembly = (
+                                glyph.layers[masterId]
+                                .userData.get(VARIANTS_ID, {})
+                                .get(H_ASSEMBLY_ID, [])
+                            )
+                            if i < len(masterAssembly):
+                                start += masterAssembly[i][2] * factor
+                                end += masterAssembly[i][3] * factor
+                        hassembly[i] = (hassembly[i][0], hassembly[i][1], start, end)
+                if vassembly := varData.get(V_ASSEMBLY_ID):
+                    for i, _ in enumerate(vassembly):
+                        start = 0
+                        end = 0
+                        for masterId, factor in instance.instanceInterpolations.items():
+                            masterAssembly = (
+                                glyph.layers[masterId]
+                                .userData.get(VARIANTS_ID, {})
+                                .get(V_ASSEMBLY_ID, [])
+                            )
+                            if i < len(masterAssembly):
+                                start += masterAssembly[i][2] * factor
+                                end += masterAssembly[i][3] * factor
+                        vassembly[i] = (vassembly[i][0], vassembly[i][1], start, end)
 
     @staticmethod
-    def buildMathTable(font, ttFont, interpolatedConstants):
+    def buildMathTable(font, ttFont):
         instance = font.instances[0]
         master = font.masters[0]
 
+        constantData = master.userData.get(CONSTANTS_ID, {})
         # MinConnectorOverlap is used in MathVariants table below.
         constants = {
-            c: v
-            for c, v in interpolatedConstants.items()
-            if c != "MinConnectorOverlap" and v
+            c: v for c, v in constantData.items() if c != "MinConnectorOverlap" and v
         }
 
         if (
@@ -1576,7 +1611,7 @@ class MATHPlugin(GeneralPlugin):
 
         if any([vvariants, hvariants, vassemblies, hassemblies]):
             table.MathVariants = otTables.MathVariants()
-            overlap = interpolatedConstants.get("MinConnectorOverlap", 0)
+            overlap = constantData.get("MinConnectorOverlap", 0)
             table.MathVariants.MinConnectorOverlap = overlap
 
         for vertical, variants, assemblies in (
