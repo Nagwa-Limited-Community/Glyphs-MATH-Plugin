@@ -339,11 +339,13 @@ class VariantsWindow:
             ]
             tab.addAutoPosSizeRules(rules)
 
-        if varData := layer.userData[VARIANTS_ID]:
+        if varData := glyph.userData[VARIANTS_ID]:
             if vvars := varData.get(V_VARIANTS_ID):
                 window.tabs[0].vedit.set(" ".join(str(v) for v in vvars))
             if hvars := varData.get(H_VARIANTS_ID):
                 window.tabs[1].vedit.set(" ".join(str(v) for v in hvars))
+
+        if varData := layer.userData[VARIANTS_ID]:
             if vassembly := varData.get(V_ASSEMBLY_ID):
                 items = []
                 for part in vassembly:
@@ -360,6 +362,7 @@ class VariantsWindow:
                     part[1] = bool(part[1])
                     items.append(dict(zip(("g", "f", "s", "e"), part)))
                 window.tabs[1].alist.set(items)
+
         if exended := glyph.userData[EXTENDED_SHAPE_ID]:
             window.tabs[0].check.set(bool(exended))
 
@@ -518,9 +521,9 @@ class VariantsWindow:
             if not new:
                 return
 
-            layer = self.layer
+            glyph = self.glyph
             tag = sender.getNSTextField().tag()
-            varData = layer.userData.get(VARIANTS_ID, {})
+            varData = glyph.userData.get(VARIANTS_ID, {})
             if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
                 if " ".join(str(v) for v in var) == new:
                     return
@@ -528,7 +531,7 @@ class VariantsWindow:
             varData = {k: list(v) for k, v in varData.items()}
             var = [self.glyphRef(n) for n in new.split()]
             varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
-            layer.userData[VARIANTS_ID] = dict(varData)
+            glyph.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
 
@@ -677,7 +680,7 @@ class ConstantsWindow:
         elif constant == "DisplayOperatorMinHeight":
             # display "integral" height
             if (glyph := font.glyphs["∫"]) is not None:
-                if varData := glyph.layers[master.id].userData[VARIANTS_ID]:
+                if varData := glyph.userData[VARIANTS_ID]:
                     if vvars := varData.get(V_VARIANTS_ID):
                         value = vvars[1].glyph.layers[master.id].bounds.size.height
         elif constant == "MathLeading":
@@ -1002,14 +1005,16 @@ class MATHPlugin(GeneralPlugin):
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
             if showGV or showGA:
-                if userData := layer.userData[VARIANTS_ID]:
-                    assembly = userData.get(V_ASSEMBLY_ID, []) if showGA else []
-                    variants = userData.get(V_VARIANTS_ID, []) if showGV else []
+                if (layerData := layer.userData.get(VARIANTS_ID, {})) or (
+                    glyphData := layer.parent.userData.get(VARIANTS_ID, {})
+                ):
+                    assembly = layerData.get(V_ASSEMBLY_ID, []) if showGA else []
+                    variants = glyphData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
                         self.drawVariants(variants, assembly, layer, scale, True)
 
-                    assembly = userData.get(H_ASSEMBLY_ID, []) if showGA else []
-                    variants = userData.get(H_VARIANTS_ID, []) if showGV else []
+                    assembly = layerData.get(H_ASSEMBLY_ID, []) if showGA else []
+                    variants = glyphData.get(H_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
                         self.drawVariants(variants, assembly, layer, scale, False)
         except:
@@ -1194,17 +1199,28 @@ class MATHPlugin(GeneralPlugin):
                 if varData := glyph.userData.get(VARIANTS_ID):
                     # We used to save the variant data per-glyph, but we now store it per layer,
                     # so we migrate old data here.
+                    layerData = {
+                        k: v
+                        for k, v in varData.items()
+                        if k in (H_ASSEMBLY_ID, V_ASSEMBLY_ID)
+                    }
+                    glyphData = {
+                        k: v
+                        for k, v in varData.items()
+                        if k in (H_VARIANTS_ID, V_VARIANTS_ID)
+                    }
                     for master in font.masters:
                         layer = glyph.layers[master.id]
-                        layer.userData[VARIANTS_ID] = dict(varData)
-                    del glyph.userData[VARIANTS_ID]
+                        layer.userData[VARIANTS_ID] = layerData
+                    glyph.userData[VARIANTS_ID] = glyphData
 
                 # Convert glyph names in userData to GSGlyphReference
+                varData = glyph.userData.get(VARIANTS_ID, {})
+                for id in (V_VARIANTS_ID, H_VARIANTS_ID):
+                    if names := varData.get(id):
+                        varData[id] = [gn(n) for n in names]
                 for layer in glyph.layers:
                     varData = layer.userData.get(VARIANTS_ID, {})
-                    for id in (V_VARIANTS_ID, H_VARIANTS_ID):
-                        if names := varData.get(id):
-                            varData[id] = [gn(n) for n in names]
                     for id in (V_ASSEMBLY_ID, H_ASSEMBLY_ID):
                         if assembly := varData.get(id):
                             varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
@@ -1309,10 +1325,13 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     vvariants.glyphs, variants.VertGlyphConstruction
                 ):
-                    layer = font.glyphs[name].layers[master.id]
-                    varData = layer.userData.get(VARIANTS_ID, {})
+                    glyph = font.glyphs[name]
+                    varData = glyph.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
                         varData[V_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+
+                    layer = glyph.layers[master.id]
                     if assembly := value.GlyphAssembly:
                         varData[V_ASSEMBLY_ID] = [
                             [
@@ -1332,14 +1351,19 @@ class MATHPlugin(GeneralPlugin):
                                 0,
                             )
                     layer.userData[VARIANTS_ID] = dict(varData)
+
             if hvariants := variants.HorizGlyphCoverage:
                 for name, value in zip(
                     hvariants.glyphs, variants.HorizGlyphConstruction
                 ):
-                    layer = font.glyphs[name].layers[master.id]
-                    varData = layer.userData.get(VARIANTS_ID, {})
+                    glyph = font.glyphs[name]
+                    varData = glyph.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
                         varData[H_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                    glyph.userData[VARIANTS_ID] = dict(varData)
+
+                    layer = glyph.layers[master.id]
+                    varData = layer.userData.get(VARIANTS_ID, {})
                     if assembly := value.GlyphAssembly:
                         varData[H_ASSEMBLY_ID] = [
                             [
@@ -1454,11 +1478,14 @@ class MATHPlugin(GeneralPlugin):
         hassemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
-            varData = glyph.layers[master.id].userData.get(VARIANTS_ID, {})
+            varData = glyph.userData.get(VARIANTS_ID, {})
             if vvars := varData.get(V_VARIANTS_ID):
                 vvariants[name] = vvars
             if hvars := varData.get(H_VARIANTS_ID):
                 hvariants[name] = hvars
+
+            layer = glyph.layers[master.id]
+            varData = layer.userData.get(VARIANTS_ID, {})
             if vassembly := varData.get(V_ASSEMBLY_ID):
                 vassemblies[name] = vassembly[:]
                 # Last part has italic correction, use it for the assembly.

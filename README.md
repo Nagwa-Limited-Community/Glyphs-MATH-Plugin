@@ -22,7 +22,8 @@ The plug-in adds some new menu entries:
   ![MATH constants dialog](dialog-math-constants.png)
 * _Glyph → Edit MATH Variants..._ for editing glyph-level MATH variants,
   assembly, and extended shape flag.
-  The values are saved per-master and should be edited for each master.
+  The assemblies are saved per-master and should be edited for each master, the
+  rest is saved globally and should be the same for all masters.
   ![MATH variants dialog](dialog-math-variants.png)
 * _View → Show MATH variants_ and _View → Show MATH Assembly_ draw math
   variants and extensible assemblies.
