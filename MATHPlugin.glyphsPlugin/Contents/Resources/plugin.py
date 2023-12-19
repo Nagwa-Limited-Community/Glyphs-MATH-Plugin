@@ -20,6 +20,7 @@ from GlyphsApp import (
     GSAnchor,
     GSGlyphReference,
     Message,
+    GSCallbackHandler,
 )
 from GlyphsApp.drawingTools import restore, save, translate
 from GlyphsApp.plugins import GeneralPlugin
@@ -864,6 +865,7 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
         Glyphs.addCallback(self.open_, DOCUMENTOPENED)
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
+        GSCallbackHandler.addCallback_forOperation_(self, "GSPrepareLayerCallback")
 
         menuItem = self.newMenuItem_("Show MATH Italic Correction", self.toggleShowIC_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
@@ -1629,3 +1631,13 @@ class MATHPlugin(GeneralPlugin):
             else:
                 table.MathVariants.HorizGlyphCoverage = coverage
                 table.MathVariants.HorizGlyphConstruction = constructions
+
+    @objc.typedSelector(b'c32@:@@@o^@')
+    def interpolateLayer_glyph_interpolation_error_(self, layer, glyph, interpolation, error):
+        print("__interpolateLayer", layer, glyph, interpolation)
+        return (True, None)
+
+    @objc.typedSelector(b'c32@:@@@o^@')
+    def interpolateMaster_font_interpolation_error_(self, master, font, interpolation, error):
+        print("__interpolateMaster")
+        return (True, None)
