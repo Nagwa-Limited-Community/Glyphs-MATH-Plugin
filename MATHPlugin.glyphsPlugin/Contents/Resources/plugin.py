@@ -254,12 +254,14 @@ GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 
 
 class VariantsWindow:
-    def __init__(self, glyph):
+    def __init__(self, layer):
+        self.layer = layer
+        glyph = layer.parent
         self._glyph = glyph
         width, height = 650, 400
         self._window = window = vanilla.Window(
             (width, height),
-            f"MATH Variants for ‘{self._glyph.name}’ from {glyph.parent.familyName}",
+            f"MATH Variants for ‘{glyph.name}’ from {glyph.parent.familyName}",
         )
         window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
 
@@ -338,7 +340,7 @@ class VariantsWindow:
             ]
             tab.addAutoPosSizeRules(rules)
 
-        if varData := glyph.userData[VARIANTS_ID]:
+        if varData := layer.userData[VARIANTS_ID]:
             if vvars := varData.get(V_VARIANTS_ID):
                 window.tabs[0].vedit.set(" ".join(str(v) for v in vvars))
             if hvars := varData.get(H_VARIANTS_ID):
@@ -375,7 +377,7 @@ class VariantsWindow:
         posSize = self._window.getPosSize()
         selected = self._window.tabs.get()
         self._window.close()
-        window = VariantsWindow(glyph)
+        window = VariantsWindow(glyph.layers[self.layer.associatedMasterId])
         window._window.setPosSize(posSize)
         window._window.tabs.set(selected)
         window.open()
@@ -517,9 +519,9 @@ class VariantsWindow:
             if not new:
                 return
 
-            glyph = self._glyph
+            layer = self.layer
             tag = sender.getNSTextField().tag()
-            varData = glyph.userData.get(VARIANTS_ID, {})
+            varData = layer.userData.get(VARIANTS_ID, {})
             if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
                 if " ".join(str(v) for v in var) == new:
                     return
@@ -527,7 +529,7 @@ class VariantsWindow:
             varData = {k: list(v) for k, v in varData.items()}
             var = [self._glyphRef(n) for n in new.split()]
             varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
-            glyph.userData[VARIANTS_ID] = dict(varData)
+            layer.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
 
@@ -546,16 +548,16 @@ class VariantsWindow:
             if not new:
                 return
 
-            glyph = self._glyph
+            layer = self.layer
             tag = sender.getNSTableView().tag()
-            varData = glyph.userData[VARIANTS_ID]
+            varData = layer.userData[VARIANTS_ID]
             if not varData:
                 varData = {}
             if varData.get(H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID) == new:
                 return
             varData = {k: list(v) for k, v in varData.items()}
             varData[H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID] = new
-            glyph.userData[VARIANTS_ID] = dict(varData)
+            layer.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
 
@@ -676,7 +678,7 @@ class ConstantsWindow:
         elif constant == "DisplayOperatorMinHeight":
             # display "integral" height
             if (glyph := font.glyphs["∫"]) is not None:
-                if varData := glyph.userData[VARIANTS_ID]:
+                if varData := glyph.layers[master.id].userData[VARIANTS_ID]:
                     if vvars := varData.get(V_VARIANTS_ID):
                         value = vvars[1].glyph.layers[master.id].bounds.size.height
         elif constant == "MathLeading":
@@ -979,8 +981,8 @@ class MATHPlugin(GeneralPlugin):
 
     def editGlyph_(self, menuItem):
         try:
-            glyph = Glyphs.font.selectedLayers[0].parent
-            window = VariantsWindow(glyph)
+            layer = Glyphs.font.selectedLayers[0]
+            window = VariantsWindow(layer)
             window.open()
         except:
             _message(f"Editing failed:\n{traceback.format_exc()}")
@@ -1001,7 +1003,7 @@ class MATHPlugin(GeneralPlugin):
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
             if showGV or showGA:
-                if userData := layer.parent.userData[VARIANTS_ID]:
+                if userData := layer.userData[VARIANTS_ID]:
                     assembly = userData.get(V_ASSEMBLY_ID, []) if showGA else []
                     variants = userData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
@@ -1190,13 +1192,23 @@ class MATHPlugin(GeneralPlugin):
                 return GSGlyphReference(font.glyphs[n])
 
             for glyph in font.glyphs:
-                varData = glyph.userData.get(VARIANTS_ID, {})
-                for id in (V_VARIANTS_ID, H_VARIANTS_ID):
-                    if names := varData.get(id):
-                        varData[id] = [gn(n) for n in names]
-                for id in (V_ASSEMBLY_ID, H_ASSEMBLY_ID):
-                    if assembly := varData.get(id):
-                        varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
+                if varData := glyph.userData.get(VARIANTS_ID):
+                    # We used to save the variant data per-glyph, but we now store it per layer,
+                    # so we migrate old data here.
+                    for master in font.masters:
+                        layer = glyph.layers[master.id]
+                        layer.userData[VARIANTS_ID] = dict(varData)
+                    del glyph.userData[VARIANTS_ID]
+
+                # Convert glyph names in userData to GSGlyphReference
+                for layer in glyph.layers:
+                    varData = layer.userData.get(VARIANTS_ID, {})
+                    for id in (V_VARIANTS_ID, H_VARIANTS_ID):
+                        if names := varData.get(id):
+                            varData[id] = [gn(n) for n in names]
+                    for id in (V_ASSEMBLY_ID, H_ASSEMBLY_ID):
+                        if assembly := varData.get(id):
+                            varData[id] = [(gn(a[0]), *a[1:]) for a in assembly]
             font.tempData[STATUS_ID] = True
         except AppKit.MPMissingGlyph as e:
             _message(f"Opening failed:\n{e}")
@@ -1298,8 +1310,8 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     vvariants.glyphs, variants.VertGlyphConstruction
                 ):
-                    glyph = font.glyphs[name]
-                    varData = glyph.userData.get(VARIANTS_ID, {})
+                    layer = font.glyphs[name].layers[master.id]
+                    varData = layer.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
                         varData[V_VARIANTS_ID] = [v.VariantGlyph for v in records]
                     if assembly := value.GlyphAssembly:
@@ -1314,19 +1326,19 @@ class MATHPlugin(GeneralPlugin):
                         ]
                         if ic := assembly.ItalicsCorrection:
                             part = varData[V_ASSEMBLY_ID][-1]
-                            layer = font.glyphs[part[0]].layers[master.id]
-                            layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
-                            layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
-                                layer.width + ic.Value,
+                            partLayer = font.glyphs[part[0]].layers[master.id]
+                            partLayer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
+                            partLayer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
+                                partLayer.width + ic.Value,
                                 0,
                             )
-                    glyph.userData[VARIANTS_ID] = dict(varData)
+                    layer.userData[VARIANTS_ID] = dict(varData)
             if hvariants := variants.HorizGlyphCoverage:
                 for name, value in zip(
                     hvariants.glyphs, variants.HorizGlyphConstruction
                 ):
-                    glyph = font.glyphs[name]
-                    varData = glyph.userData.get(VARIANTS_ID, {})
+                    layer = font.glyphs[name].layers[master.id]
+                    varData = layer.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
                         varData[H_VARIANTS_ID] = [v.VariantGlyph for v in records]
                     if assembly := value.GlyphAssembly:
@@ -1341,13 +1353,13 @@ class MATHPlugin(GeneralPlugin):
                         ]
                         if ic := assembly.ItalicsCorrection:
                             part = varData[H_ASSEMBLY_ID][-1]
-                            layer = font.glyphs[part[0]].layers[master.id]
-                            layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
-                            layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
-                                layer.width + ic.Value,
+                            partLayer = font.glyphs[part[0]].layers[master.id]
+                            partLayer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
+                            partLayer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
+                                partLayer.width + ic.Value,
                                 0,
                             )
-                    glyph.userData[VARIANTS_ID] = dict(varData)
+                    layer.userData[VARIANTS_ID] = dict(varData)
 
         if constants:
             userData[CONSTANTS_ID] = constants
@@ -1390,6 +1402,7 @@ class MATHPlugin(GeneralPlugin):
     @staticmethod
     def _build(font, ttFont, interpolatedConstants):
         instance = font.instances[0]
+        master = font.masters[0]
 
         # MinConnectorOverlap is used in MathVariants table below.
         constants = {
@@ -1442,7 +1455,7 @@ class MATHPlugin(GeneralPlugin):
         hassemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
-            varData = glyph.userData.get(VARIANTS_ID, {})
+            varData = glyph.layers[master.id].userData.get(VARIANTS_ID, {})
             if vvars := varData.get(V_VARIANTS_ID):
                 vvariants[name] = vvars
             if hvars := varData.get(H_VARIANTS_ID):
