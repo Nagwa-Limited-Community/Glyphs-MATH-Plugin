@@ -1197,13 +1197,16 @@ class MATHPlugin(GeneralPlugin):
 
             for glyph in font.glyphs:
                 if varData := glyph.userData.get(VARIANTS_ID):
-                    # We used to save the variant data per-glyph, but we now store it per layer,
+                    # We used to save the assemblies per-glyph, but we now store it per layer,
                     # so we migrate old data here.
                     layerData = {
                         k: v
                         for k, v in varData.items()
                         if k in (H_ASSEMBLY_ID, V_ASSEMBLY_ID)
                     }
+                    if not layerData:
+                        continue
+
                     glyphData = {
                         k: v
                         for k, v in varData.items()
