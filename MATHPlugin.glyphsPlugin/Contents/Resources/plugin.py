@@ -256,20 +256,19 @@ GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 class VariantsWindow:
     def __init__(self, layer):
         self.layer = layer
-        glyph = layer.parent
-        self._glyph = glyph
+        self.glyph = glyph = layer.parent
         width, height = 650, 400
-        self._window = window = vanilla.Window(
+        self.window = window = vanilla.Window(
             (width, height),
             f"MATH Variants for ‘{glyph.name}’ from {glyph.parent.familyName}",
         )
         window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
 
-        self._emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
+        self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
             vbox = vanilla.TextBox("auto", "Variants:")
-            vbutton = vanilla.Button("auto", "🪄", callback=self._guessVariantsCallback)
+            vbutton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
             vbutton.getNSButton().setTag_(i)
             setattr(self, f"vbutton{i}", vbutton)
             tab.vstack = vanilla.HorizontalStackView(
@@ -277,20 +276,20 @@ class VariantsWindow:
             )
 
             tab.vedit = vanilla.EditText(
-                "auto", continuous=False, callback=self._editTextCallback
+                "auto", continuous=False, callback=self.editTextCallback
             )
             tab.vedit.getNSTextField().setTag_(i)
 
             abox = vanilla.TextBox("auto", "Assembly:")
-            abutton = vanilla.Button("auto", "🪄", callback=self._guessAssemblyCallback)
+            abutton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
             abutton.getNSButton().setTag_(i)
             setattr(self, f"abutton{i}", abutton)
             tab.astack = vanilla.HorizontalStackView(
                 "auto", [{"view": abox}, {"view": abutton, "width": 24}]
             )
 
-            prev = vanilla.Button("auto", "⬅️", callback=self._prevCallback)
-            next = vanilla.Button("auto", "➡️", callback=self._nextCallback)
+            prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
+            next = vanilla.Button("auto", "➡️", callback=self.nextCallback)
             prev.bind("[", ["command"])
             next.bind("]", ["command"])
             setattr(self, f"prev{i}", prev)
@@ -319,13 +318,13 @@ class VariantsWindow:
                 allowsSorting=False,
                 drawVerticalLines=True,
                 enableDelete=True,
-                editCallback=self._listEditCallback,
-                doubleClickCallback=self._listDoubleClickCallback,
+                editCallback=self.listEditCallback,
+                doubleClickCallback=self.listDoubleClickCallback,
             )
             tab.alist.getNSTableView().setTag_(i)
 
             tab.check = vanilla.CheckBox(
-                "auto", "Extended shape", callback=self._checkBoxCallback
+                "auto", "Extended shape", callback=self.checkBoxCallback
             )
             tab.check.show(i == 0)
 
@@ -365,47 +364,47 @@ class VariantsWindow:
             window.tabs[0].check.set(bool(exended))
 
     def open(self):
-        self._window.open()
+        self.window.open()
 
-    def _glyphRef(self, name):
+    def glyphRef(self, name):
         try:
-            return GSGlyphReference(self._glyph.parent.glyphs[name])
+            return GSGlyphReference(self.glyph.parent.glyphs[name])
         except:
             _message(traceback.format_exc())
 
-    def _open(self, glyph):
-        posSize = self._window.getPosSize()
-        selected = self._window.tabs.get()
-        self._window.close()
+    def openGlyph(self, glyph):
+        posSize = self.window.getPosSize()
+        selected = self.window.tabs.get()
+        self.window.close()
         window = VariantsWindow(glyph.layers[self.layer.associatedMasterId])
-        window._window.setPosSize(posSize)
-        window._window.tabs.set(selected)
+        window.window.setPosSize(posSize)
+        window.window.tabs.set(selected)
         window.open()
 
-    def _nextCallback(self, sender):
+    def nextCallback(self, sender):
         try:
-            font = self._glyph.parent
+            font = self.glyph.parent
             glyphOrder = [g.name for g in font.glyphs]
-            index = glyphOrder.index(self._glyph.name)
+            index = glyphOrder.index(self.glyph.name)
             if index < len(glyphOrder) - 1:
-                self._open(font.glyphs[index + 1])
+                self.openGlyph(font.glyphs[index + 1])
         except:
             _message(traceback.format_exc())
 
-    def _prevCallback(self, sender):
+    def prevCallback(self, sender):
         try:
-            font = self._glyph.parent
+            font = self.glyph.parent
             glyphOrder = [g.name for g in font.glyphs]
-            index = glyphOrder.index(self._glyph.name)
+            index = glyphOrder.index(self.glyph.name)
             if index > 0:
-                self._open(font.glyphs[index - 1])
+                self.openGlyph(font.glyphs[index - 1])
         except:
             _message(traceback.format_exc())
 
-    def _guessVariantsCallback(self, sender):
+    def guessVariantsCallback(self, sender):
         try:
             tag = sender.getNSButton().tag()
-            glyph = self._glyph
+            glyph = self.glyph
             font = glyph.parent
             name = glyph.name
 
@@ -421,15 +420,15 @@ class VariantsWindow:
             for suffix in suffixes:
                 prefix = f"{name}.{suffix}"
                 if variants := [a for a in alternates if a.startswith(prefix)]:
-                    tab = self._window.tabs[tag]
+                    tab = self.window.tabs[tag]
                     tab.vedit.set(" ".join([name] + variants))
-                    self._editTextCallback(tab.vedit)
+                    self.editTextCallback(tab.vedit)
                     return
         except:
             _message(traceback.format_exc())
 
-    def _guessAssembly(self, vertical):
-        glyph = self._glyph
+    def guessAssembly(self, vertical):
+        glyph = self.glyph
         font = glyph.parent
         name = glyph.name
 
@@ -458,15 +457,15 @@ class VariantsWindow:
 
         return parts
 
-    def _guessAssemblyCallback(self, sender):
+    def guessAssemblyCallback(self, sender):
         try:
             tag = sender.getNSButton().tag()
 
             assemblyId = H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID
             vertical = assemblyId == V_ASSEMBLY_ID
-            if (parts := self._guessAssembly(vertical)) is None:
+            if (parts := self.guessAssembly(vertical)) is None:
                 # Fallback using legacy encoded assembly parts
-                glyph = self._glyph
+                glyph = self.glyph
                 font = glyph.parent
                 name = glyph.name
                 unicode = glyph.unicode
@@ -500,7 +499,7 @@ class VariantsWindow:
             if not parts:
                 return
 
-            tab = self._window.tabs[tag]
+            tab = self.window.tabs[tag]
             items = []
             for i, part in enumerate(parts):
                 ext = bool(i % 2)
@@ -508,12 +507,12 @@ class VariantsWindow:
                 end = 0
                 items.append({"g": part.name, "f": ext, "s": start, "e": end})
             tab.alist.set(items)
-            self._listEditCallback(tab.alist)
+            self.listEditCallback(tab.alist)
             return
         except:
             _message(traceback.format_exc())
 
-    def _editTextCallback(self, sender):
+    def editTextCallback(self, sender):
         try:
             new = sender.get().strip()
             if not new:
@@ -527,23 +526,23 @@ class VariantsWindow:
                     return
 
             varData = {k: list(v) for k, v in varData.items()}
-            var = [self._glyphRef(n) for n in new.split()]
+            var = [self.glyphRef(n) for n in new.split()]
             varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
             layer.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
 
-    def _listEditCallback(self, sender):
+    def listEditCallback(self, sender):
         try:
             new = [
                 (
-                    self._glyphRef(item["g"]),
+                    self.glyphRef(item["g"]),
                     int(item["f"]),
                     int(item["s"]),
                     int(item["e"]),
                 )
                 for item in sender.get()
-                if item != self._emptyRow
+                if item != self.emptyRow
             ]
             if not new:
                 return
@@ -561,23 +560,23 @@ class VariantsWindow:
         except:
             _message(traceback.format_exc())
 
-    def _listDoubleClickCallback(self, sender):
+    def listDoubleClickCallback(self, sender):
         try:
             table = sender.getNSTableView()
             column = table.clickedColumn()
             row = table.clickedRow()
             if row < 0 and column < 0:
                 items = sender.get()
-                items.append(self._emptyRow)
+                items.append(self.emptyRow)
                 sender.set(items)
                 row = len(items) - 1
             table._startEditingColumn_row_event_(column, row, None)
         except:
             _message(traceback.format_exc())
 
-    def _checkBoxCallback(self, sender):
+    def checkBoxCallback(self, sender):
         try:
-            glyph = self._glyph
+            glyph = self.glyph
             glyph.userData[EXTENDED_SHAPE_ID] = sender.get()
             if not sender.get():
                 del glyph.userData[EXTENDED_SHAPE_ID]
@@ -587,15 +586,15 @@ class VariantsWindow:
 
 class ConstantsWindow:
     def __init__(self, master):
-        self._master = master
+        self.master = master
         if CONSTANTS_ID not in master.userData:
             constants = {}
         else:
             constants = dict(master.userData[CONSTANTS_ID])
-        self._constants = constants
+        self.constants = constants
 
         width, height = 650, 400
-        self._window = window = vanilla.Window(
+        self.window = window = vanilla.Window(
             (width, height),
             f"MATH Constants for master ‘{master.name}’ from {master.font.familyName}",
         )
@@ -631,7 +630,7 @@ class ConstantsWindow:
                 box.edit = vanilla.EditText(
                     "auto",
                     constants.get(c, None),
-                    callback=self._callback,
+                    callback=self.editTextCallback,
                     formatter=uformatter if c in CONSTANT_UNSIGNED else sformatter,
                     placeholder="0",
                 )
@@ -641,7 +640,7 @@ class ConstantsWindow:
                 box.button = vanilla.Button(
                     "auto",
                     "🪄",
-                    callback=self._guessCallback,
+                    callback=self.guessCallback,
                 )
                 box.button.getNSButton().setToolTip_("Guess value")
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
@@ -659,14 +658,14 @@ class ConstantsWindow:
             tab.addAutoPosSizeRules(rules)
 
     def open(self):
-        self._window.open()
+        self.window.open()
 
-    def _getConstant(self, constant, force=False):
-        master = self._master
+    def getConstant(self, constant, force=False):
+        master = self.master
         font = master.font
 
-        if not force and constant in self._constants:
-            return self._constants[constant]
+        if not force and constant in self.constants:
+            return self.constants[constant]
 
         value = None
         if constant == "ScriptPercentScaleDown":
@@ -698,32 +697,32 @@ class ConstantsWindow:
         elif constant == "SubscriptTopMax":
             value = master.xHeight * 4 / 5
         elif constant == "SubscriptBaselineDropMin":
-            if (value := self._getConstant("SubscriptShiftDown")) is not None:
+            if (value := self.getConstant("SubscriptShiftDown")) is not None:
                 value *= 3 / 4
         elif constant == "SuperscriptShiftUp":
             value = master.customParameters["superscriptYOffset"]
         elif constant == "SuperscriptShiftUpCramped":
-            if (value := self._getConstant("SuperscriptShiftUp")) is not None:
+            if (value := self.getConstant("SuperscriptShiftUp")) is not None:
                 value *= 3 / 4
         elif constant == "SuperscriptBottomMin":
             value = master.xHeight / 4
         elif constant == "SuperscriptBaselineDropMax":
-            if (v := self._getConstant("SuperscriptShiftUp")) is not None:
+            if (v := self.getConstant("SuperscriptShiftUp")) is not None:
                 value = master.capHeight - v
         elif constant == "SubSuperscriptGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 4
         elif constant == "SuperscriptBottomMaxWithSubscript":
             value = master.xHeight * 4 / 5
         elif constant == "SpaceAfterScript":
             value = font.upm / 24
         elif constant == "UpperLimitGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 2
         elif constant == "UpperLimitBaselineRiseMin":
             value = -master.descender * 3 / 4
         elif constant == "LowerLimitGapMin":
-            value = self._getConstant("UpperLimitGapMin")
+            value = self.getConstant("UpperLimitGapMin")
         elif constant == "LowerLimitBaselineDropMin":
             value = master.ascender * 3 / 4
         elif constant == "StackTopShiftUp":
@@ -735,31 +734,31 @@ class ConstantsWindow:
         elif constant == "StackBottomDisplayStyleShiftDown":
             value = master.capHeight
         elif constant == "StackGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "StackDisplayStyleGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 7
         elif constant == "StretchStackTopShiftUp":
-            value = self._getConstant("UpperLimitBaselineRiseMin")
+            value = self.getConstant("UpperLimitBaselineRiseMin")
         elif constant == "StretchStackBottomShiftDown":
-            value = self._getConstant("LowerLimitBaselineDropMin")
+            value = self.getConstant("LowerLimitBaselineDropMin")
         elif constant == "StretchStackGapAboveMin":
-            value = self._getConstant("UpperLimitGapMin")
+            value = self.getConstant("UpperLimitGapMin")
         elif constant == "StretchStackGapBelowMin":
-            value = self._getConstant("LowerLimitGapMin")
+            value = self.getConstant("LowerLimitGapMin")
         elif constant == "FractionNumeratorShiftUp":
-            value = self._getConstant("StackTopShiftUp")
+            value = self.getConstant("StackTopShiftUp")
         elif constant == "FractionNumeratorDisplayStyleShiftUp":
-            value = self._getConstant("StackTopDisplayStyleShiftUp")
+            value = self.getConstant("StackTopDisplayStyleShiftUp")
         elif constant == "FractionDenominatorShiftDown":
-            value = self._getConstant("StackBottomShiftDown")
+            value = self.getConstant("StackBottomShiftDown")
         elif constant == "FractionDenominatorDisplayStyleShiftDown":
-            value = self._getConstant("StackBottomDisplayStyleShiftDown")
+            value = self.getConstant("StackBottomDisplayStyleShiftDown")
         elif constant == "FractionNumeratorGapMin":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "FractionNumDisplayStyleGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "FractionRuleThickness":
             # "radical" top connecting part
@@ -774,9 +773,9 @@ class ConstantsWindow:
                     )
                     value = segments[0].bounds.size.height
         elif constant == "FractionDenominatorGapMin":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "FractionDenomDisplayStyleGapMin":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "SkewedFractionHorizontalGap":
             # TODO
@@ -785,30 +784,30 @@ class ConstantsWindow:
             # TODO
             pass
         elif constant == "OverbarVerticalGap":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "OverbarRuleThickness":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "OverbarExtraAscender":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "UnderbarVerticalGap":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 3
         elif constant == "UnderbarRuleThickness":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "UnderbarExtraDescender":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "RadicalVerticalGap":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule * 5 / 4
         elif constant == "RadicalDisplayStyleVerticalGap":
-            if (rule := self._getConstant("FractionRuleThickness")) is not None:
+            if (rule := self.getConstant("FractionRuleThickness")) is not None:
                 value = rule + master.xHeight / 4
         elif constant == "RadicalRuleThickness":
-            value = self._getConstant("FractionRuleThickness")
+            value = self.getConstant("FractionRuleThickness")
         elif constant == "RadicalExtraAscender":
-            if (value := self._getConstant("RadicalRuleThickness")) is None:
-                value = self._getConstant("FractionRuleThickness")
+            if (value := self.getConstant("RadicalRuleThickness")) is None:
+                value = self.getConstant("FractionRuleThickness")
         elif constant == "RadicalKernBeforeDegree":
             value = font.upm * 5 / 18
         elif constant == "RadicalKernAfterDegree":
@@ -820,17 +819,17 @@ class ConstantsWindow:
 
         return value
 
-    def _guessCallback(self, sender):
+    def guessCallback(self, sender):
         constant = MATH_CONSTANTS[sender.getNSButton().tag()]
-        if (value := self._getConstant(constant, force=True)) is not None:
-            for tab in self._window.tabs:
+        if (value := self.getConstant(constant, force=True)) is not None:
+            for tab in self.window.tabs:
                 box = getattr(tab, constant, None)
                 if box is not None:
                     box.edit.set(value)
-                    self._callback(box.edit)
+                    self.editTextCallback(box.edit)
 
-    def _callback(self, sender):
-        constants = self._constants
+    def editTextCallback(self, sender):
+        constants = self.constants
         value = sender.get()
         value = value if value is None else int(value)
         tag = sender.getNSTextField().tag()
@@ -845,9 +844,9 @@ class ConstantsWindow:
             del constants[constant]
 
         if constants:
-            self._master.userData[CONSTANTS_ID] = constants
-        elif CONSTANTS_ID in self._master.userData:
-            del self._master.userData[CONSTANTS_ID]
+            self.master.userData[CONSTANTS_ID] = constants
+        elif CONSTANTS_ID in self.master.userData:
+            del self.master.userData[CONSTANTS_ID]
 
 
 class MATHPlugin(GeneralPlugin):
@@ -993,12 +992,12 @@ class MATHPlugin(GeneralPlugin):
             scale = 1 / options["Scale"]
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowIC:"]:
-                self._drawAnchors(layer, ITALIC_CORRECTION_ANCHOR, scale)
+                self.drawAnchors(layer, ITALIC_CORRECTION_ANCHOR, scale)
             if self.defaults[f"{PLUGIN_ID}.toggleShowTA:"]:
-                self._drawAnchors(layer, TOP_ACCENT_ANCHOR, scale)
+                self.drawAnchors(layer, TOP_ACCENT_ANCHOR, scale)
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                self._drawMathkern(layer, scale)
+                self.drawMathkern(layer, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -1007,17 +1006,17 @@ class MATHPlugin(GeneralPlugin):
                     assembly = userData.get(V_ASSEMBLY_ID, []) if showGA else []
                     variants = userData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
-                        self._drawVariants(variants, assembly, layer, scale, True)
+                        self.drawVariants(variants, assembly, layer, scale, True)
 
                     assembly = userData.get(H_ASSEMBLY_ID, []) if showGA else []
                     variants = userData.get(H_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
-                        self._drawVariants(variants, assembly, layer, scale, False)
+                        self.drawVariants(variants, assembly, layer, scale, False)
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
     @objc.python_method
-    def _drawAnchors(self, layer, name, width):
+    def drawAnchors(self, layer, name, width):
         save()
         master = layer.master
         if anchor := layer.anchors[name]:
@@ -1030,12 +1029,12 @@ class MATHPlugin(GeneralPlugin):
             elif anchor.name == TOP_ACCENT_ANCHOR:
                 AppKit.NSColor.magentaColor().set()
                 if anchor.selected:
-                    self._drawAccent(layer, anchor)
+                    self.drawAccent(layer, anchor)
             line.stroke()
         restore()
 
     @staticmethod
-    def _drawAccent(layer, anchor):
+    def drawAccent(layer, anchor):
         save()
         master = layer.master
         font = master.font
@@ -1064,7 +1063,7 @@ class MATHPlugin(GeneralPlugin):
         restore()
 
     @staticmethod
-    def _drawMathkern(layer, width):
+    def drawMathkern(layer, width):
         save()
         master = layer.master
         constants = master.userData.get(CONSTANTS_ID, {})
@@ -1110,7 +1109,7 @@ class MATHPlugin(GeneralPlugin):
         restore()
 
     @staticmethod
-    def _drawVariants(variants, assembly, layer, width, vertical):
+    def drawVariants(variants, assembly, layer, width, vertical):
         save()
         font = layer.parent.parent
 
@@ -1174,7 +1173,7 @@ class MATHPlugin(GeneralPlugin):
                 pass
             else:
                 try:
-                    self._import(font, ttFont)
+                    self.importMathTable(font, ttFont)
                 except Exception as ex:
                     raise ex
                 finally:
@@ -1216,7 +1215,7 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Opening failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def _import(font, ttFont):
+    def importMathTable(font, ttFont):
         if "MATH" not in ttFont:
             return
 
@@ -1376,10 +1375,10 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
-            constants = self._interpolateConstants(instance)
+            constants = self.interpolateConstants(instance)
 
             with TTFont(path) as ttFont:
-                self._build(font, ttFont, constants)
+                self.buildMathTable(font, ttFont, constants)
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
@@ -1387,7 +1386,7 @@ class MATHPlugin(GeneralPlugin):
             _message(f"Export failed:\n{traceback.format_exc()}")
 
     @staticmethod
-    def _interpolateConstants(instance):
+    def interpolateConstants(instance):
         font = instance.font
         constants = {}
         for c in MATH_CONSTANTS:
@@ -1400,7 +1399,7 @@ class MATHPlugin(GeneralPlugin):
         return constants
 
     @staticmethod
-    def _build(font, ttFont, interpolatedConstants):
+    def buildMathTable(font, ttFont, interpolatedConstants):
         instance = font.instances[0]
         master = font.masters[0]
 
