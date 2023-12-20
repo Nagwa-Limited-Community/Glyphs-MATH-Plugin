@@ -1009,9 +1009,9 @@ class MATHPlugin(GeneralPlugin):
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
             if showGV or showGA:
-                if (layerData := layer.userData.get(VARIANTS_ID, {})) or (
-                    glyphData := layer.parent.userData.get(VARIANTS_ID, {})
-                ):
+                layerData = layer.userData.get(VARIANTS_ID, {})
+                glyphData = layer.parent.userData.get(VARIANTS_ID, {})
+                if layerData or glyphData:
                     assembly = layerData.get(V_ASSEMBLY_ID, []) if showGA else []
                     variants = glyphData.get(V_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
