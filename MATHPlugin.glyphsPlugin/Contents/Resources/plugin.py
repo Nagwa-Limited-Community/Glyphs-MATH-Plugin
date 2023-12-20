@@ -652,8 +652,8 @@ class ConstantsWindow:
             rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
             for c in tabs[name]:
                 box = vanilla.Box("auto", borderWidth=0)
-                box.box = vanilla.TextBox("auto", c, alignment="right")
-                box.box.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
+                box.label = vanilla.TextBox("auto", c)
+                box.label.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
 
                 box.edit = vanilla.EditText(
                     "auto",
@@ -675,12 +675,19 @@ class ConstantsWindow:
 
                 box.addAutoPosSizeRules(
                     [
-                        f"H:|[box({width/2})]-[edit(40)]-[button(24)]-{width/2-64}-|",
-                        "V:|[box]|",
-                        "V:|[edit(24)]|",
-                        "V:|[button(24)]|",
+                        "H:[label]-[edit(40)]-[button(24)]",
+                        "V:|[button]|",
                     ]
                 )
+                constraints = []
+                constraints.append(box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(box.button._nsObject.centerYAnchor()))
+                constraints.append(box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(box.button._nsObject.centerYAnchor()))
+                constraint = box.label._nsObject.leadingAnchor().constraintGreaterThanOrEqualToAnchor_constant_(box._nsObject.leadingAnchor(), 20)
+                constraint.setPriority_(500)
+                box.label._nsObject.setContentHuggingPriority_forOrientation_(499, AppKit.NSLayoutConstraintOrientationHorizontal)
+                constraints.append(constraint)
+                constraints.append(box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(box._nsObject.centerXAnchor()))
+                AppKit.NSLayoutConstraint.activateConstraints_(constraints)
                 rules.append(f"H:|[{c}]|")
                 setattr(tab, f"{c}", box)
             tab.addAutoPosSizeRules(rules)
