@@ -254,7 +254,7 @@ def __GSGlyphReference__eq__(self, other):
 GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 
 pluginBundle = None
-path = __file__[:__file__.rfind("Contents/Resources/")]
+path = __file__[: __file__.rfind("Contents/Resources/")]
 pluginBundle = AppKit.NSBundle.bundleWithPath_(path)
 
 """
@@ -267,21 +267,28 @@ pluginBundle = AppKit.NSBundle.bundleWithPath_(path)
     then sync all the new keys with the localized files.
 """
 
+
 def NSLocalizedString(string, comment):
     return pluginBundle.localizedStringForKey_value_table_(string, string, None)
+
 
 class VariantsWindow:
     def __init__(self, layer):
         self.layer = layer
         self.glyph = glyph = layer.parent
         width, height = 650, 400
-        title = NSLocalizedString("MATH Variants for ‘{glyphName}’ from {familyName}", "")
+        title = NSLocalizedString(
+            "MATH Variants for ‘{glyphName}’ from {familyName}", ""
+        )
         title = title.format(glyphName=glyph.name, familyName=glyph.parent.familyName)
         self.window = window = vanilla.Window(
             (width, height),
             title,
         )
-        window.tabs = vanilla.Tabs((10, 10, -10, -10), [NSLocalizedString("Vertical", ""), NSLocalizedString("Horizontal", "")])
+        window.tabs = vanilla.Tabs(
+            (10, 10, -10, -10),
+            [NSLocalizedString("Vertical", ""), NSLocalizedString("Horizontal", "")],
+        )
 
         self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
@@ -337,7 +344,9 @@ class VariantsWindow:
             tab.alist.getNSTableView().setTag_(i)
 
             tab.check = vanilla.CheckBox(
-                "auto", NSLocalizedString("Extended shape", ""), callback=self.checkBoxCallback
+                "auto",
+                NSLocalizedString("Extended shape", ""),
+                callback=self.checkBoxCallback,
             )
             tab.check.show(i == 0)
 
@@ -614,7 +623,9 @@ class ConstantsWindow:
         self.constants = constants
 
         width, height = 650, 400
-        title = NSLocalizedString("MATH Constants for master ‘{masterName}’ from {familyName}", "")
+        title = NSLocalizedString(
+            "MATH Constants for master ‘{masterName}’ from {familyName}", ""
+        )
         title = title.format(masterName=master.name, familyName=master.font.familyName)
         self.window = window = vanilla.Window(
             (width, height),
@@ -664,7 +675,9 @@ class ConstantsWindow:
                     "🪄",
                     callback=self.guessCallback,
                 )
-                box.button.getNSButton().setToolTip_(NSLocalizedString("Guess value", ""))
+                box.button.getNSButton().setToolTip_(
+                    NSLocalizedString("Guess value", "")
+                )
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
                 box.addAutoPosSizeRules(
@@ -674,13 +687,29 @@ class ConstantsWindow:
                     ]
                 )
                 constraints = []
-                constraints.append(box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(box.button._nsObject.centerYAnchor()))
-                constraints.append(box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(box.button._nsObject.centerYAnchor()))
-                constraint = box.label._nsObject.leadingAnchor().constraintGreaterThanOrEqualToAnchor_constant_(box._nsObject.leadingAnchor(), 20)
+                constraints.append(
+                    box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                        box.button._nsObject.centerYAnchor()
+                    )
+                )
+                constraints.append(
+                    box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                        box.button._nsObject.centerYAnchor()
+                    )
+                )
+                constraint = box.label._nsObject.leadingAnchor().constraintGreaterThanOrEqualToAnchor_constant_(
+                    box._nsObject.leadingAnchor(), 20
+                )
                 constraint.setPriority_(500)
-                box.label._nsObject.setContentHuggingPriority_forOrientation_(499, AppKit.NSLayoutConstraintOrientationHorizontal)
+                box.label._nsObject.setContentHuggingPriority_forOrientation_(
+                    499, AppKit.NSLayoutConstraintOrientationHorizontal
+                )
                 constraints.append(constraint)
-                constraints.append(box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(box._nsObject.centerXAnchor()))
+                constraints.append(
+                    box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(
+                        box._nsObject.centerXAnchor()
+                    )
+                )
                 AppKit.NSLayoutConstraint.activateConstraints_(constraints)
                 rules.append(f"H:|[{c}]|")
                 setattr(tab, f"{c}", box)
@@ -892,29 +921,43 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
         GSCallbackHandler.addCallback_forOperation_(self, "GSPrepareLayerCallback")
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Italic Correction", ""), self.toggleShowIC_)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Show MATH Italic Correction", ""), self.toggleShowIC_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Top Accent Position", ""), self.toggleShowTA_)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Show MATH Top Accent Position", ""), self.toggleShowTA_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Cut-ins", ""), self.toggleShowMK_)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Show MATH Cut-ins", ""), self.toggleShowMK_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Variants", ""), self.toggleShowGV_)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Show MATH Variants", ""), self.toggleShowGV_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Assembly", ""), self.toggleShowGA_)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Show MATH Assembly", ""), self.toggleShowGA_
+        )
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Edit MATH Variants…", ""), self.editGlyph_, False)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Edit MATH Variants…", ""), self.editGlyph_, False
+        )
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
         )
         menuItem.setKeyEquivalent_("x")
         Glyphs.menu[GLYPH_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(NSLocalizedString("Edit MATH Constants…", ""), self.editFont_, False)
+        menuItem = self.newMenuItem_(
+            NSLocalizedString("Edit MATH Constants…", ""), self.editFont_, False
+        )
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSAlternateKeyMask
         )
@@ -1690,12 +1733,16 @@ class MATHPlugin(GeneralPlugin):
                 table.MathVariants.HorizGlyphCoverage = coverage
                 table.MathVariants.HorizGlyphConstruction = constructions
 
-    @objc.typedSelector(b'c32@:@@@o^@')
-    def interpolateLayer_glyph_interpolation_error_(self, layer, glyph, interpolation, error):
+    @objc.typedSelector(b"c32@:@@@o^@")
+    def interpolateLayer_glyph_interpolation_error_(
+        self, layer, glyph, interpolation, error
+    ):
         print("__interpolateLayer", layer, glyph, interpolation)
         return (True, None)
 
-    @objc.typedSelector(b'c32@:@@@o^@')
-    def interpolateMaster_font_interpolation_error_(self, master, font, interpolation, error):
+    @objc.typedSelector(b"c32@:@@@o^@")
+    def interpolateMaster_font_interpolation_error_(
+        self, master, font, interpolation, error
+    ):
         print("__interpolateMaster")
         return (True, None)
