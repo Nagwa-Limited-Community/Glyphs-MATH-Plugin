@@ -621,7 +621,7 @@ class ConstantsWindow:
 
         width, height = 650, 400
         title = NSLocalizedString("MATH Constants for master ‘{masterName}’ from {familyName}", "")
-        title = title.format(masterName=master.name, familyName=master.parent.familyName)
+        title = title.format(masterName=master.name, familyName=master.font.familyName)
         self.window = window = vanilla.Window(
             (width, height),
             title,
