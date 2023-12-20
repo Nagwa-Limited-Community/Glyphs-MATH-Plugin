@@ -519,19 +519,22 @@ class VariantsWindow:
     def editTextCallback(self, sender):
         try:
             new = sender.get().strip()
-            if not new:
-                return
 
             glyph = self.glyph
             tag = sender.getNSTextField().tag()
             varData = glyph.userData.get(VARIANTS_ID, {})
-            if var := varData.get(H_VARIANTS_ID if tag else V_VARIANTS_ID):
+            variantsId = H_VARIANTS_ID if tag else V_VARIANTS_ID
+
+            if var := varData.get(variantsId):
                 if " ".join(str(v) for v in var) == new:
                     return
 
-            varData = {k: list(v) for k, v in varData.items()}
-            var = [self.glyphRef(n) for n in new.split()]
-            varData[H_VARIANTS_ID if tag else V_VARIANTS_ID] = var
+            if new:
+                varData = {k: list(v) for k, v in varData.items()}
+                var = [self.glyphRef(n) for n in new.split()]
+                varData[variantsId] = var
+            else:
+                del varData[variantsId]
             glyph.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
@@ -548,18 +551,19 @@ class VariantsWindow:
                 for item in sender.get()
                 if item != self.emptyRow
             ]
-            if not new:
-                return
 
             layer = self.layer
             tag = sender.getNSTableView().tag()
-            varData = layer.userData[VARIANTS_ID]
-            if not varData:
-                varData = {}
-            if varData.get(H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID) == new:
+            varData = layer.userData.get(VARIANTS_ID, {})
+            assemblyId = H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID
+
+            if varData.get(assemblyId) == new:
                 return
-            varData = {k: list(v) for k, v in varData.items()}
-            varData[H_ASSEMBLY_ID if tag else V_ASSEMBLY_ID] = new
+            if new:
+                varData = {k: list(v) for k, v in varData.items()}
+                varData[assemblyId] = new
+            else:
+                del varData[assemblyId]
             layer.userData[VARIANTS_ID] = dict(varData)
         except:
             _message(traceback.format_exc())
