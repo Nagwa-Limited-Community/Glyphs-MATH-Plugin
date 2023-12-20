@@ -253,22 +253,30 @@ def __GSGlyphReference__eq__(self, other):
 
 GSGlyphReference.__eq__ = objc.python_method(__GSGlyphReference__eq__)
 
+pluginBundle = None
+path = __file__[:__file__.rfind("Contents/Resources/")]
+pluginBundle = AppKit.NSBundle.bundleWithPath_(path)
+
+def NSLocalizedString(string, comment):
+    return pluginBundle.localizedStringForKey_value_table_(string, string, None)
 
 class VariantsWindow:
     def __init__(self, layer):
         self.layer = layer
         self.glyph = glyph = layer.parent
         width, height = 650, 400
+        title = NSLocalizedString("MATH Variants for ‘{glyphName}’ from {familyName}", "")
+        title = title.format(glyphName=glyph.name, familyName=glyph.parent.familyName)
         self.window = window = vanilla.Window(
             (width, height),
-            f"MATH Variants for ‘{glyph.name}’ from {glyph.parent.familyName}",
+            title,
         )
-        window.tabs = vanilla.Tabs((10, 10, -10, -10), ["Vertical", "Horizontal"])
+        window.tabs = vanilla.Tabs((10, 10, -10, -10), [NSLocalizedString("Vertical", ""), NSLocalizedString("Horizontal", "")])
 
         self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
-            vbox = vanilla.TextBox("auto", "Variants:")
+            vbox = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
             vbutton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
             vbutton.getNSButton().setTag_(i)
             setattr(self, f"vbutton{i}", vbutton)
@@ -281,7 +289,7 @@ class VariantsWindow:
             )
             tab.vedit.getNSTextField().setTag_(i)
 
-            abox = vanilla.TextBox("auto", "Assembly:")
+            abox = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
             abutton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
             abutton.getNSButton().setTag_(i)
             setattr(self, f"abutton{i}", abutton)
@@ -301,18 +309,18 @@ class VariantsWindow:
                 "auto",
                 [],
                 columnDescriptions=[
-                    {"key": "g", "title": "Glyph"},
+                    {"key": "g", "title": NSLocalizedString("Glyph", "")},
                     {
                         "key": "s",
-                        "title": "Start Connector",
+                        "title": NSLocalizedString("Start Connector", ""),
                     },
                     {
                         "key": "e",
-                        "title": "End Connector",
+                        "title": NSLocalizedString("End Connector", ""),
                     },
                     {
                         "key": "f",
-                        "title": "Extender",
+                        "title": NSLocalizedString("Extender", ""),
                         "cell": vanilla.CheckBoxListCell(),
                     },
                 ],
@@ -325,7 +333,7 @@ class VariantsWindow:
             tab.alist.getNSTableView().setTag_(i)
 
             tab.check = vanilla.CheckBox(
-                "auto", "Extended shape", callback=self.checkBoxCallback
+                "auto", NSLocalizedString("Extended shape", ""), callback=self.checkBoxCallback
             )
             tab.check.show(i == 0)
 
@@ -602,18 +610,20 @@ class ConstantsWindow:
         self.constants = constants
 
         width, height = 650, 400
+        title = NSLocalizedString("MATH Constants for master ‘{masterName}’ from {familyName}", "")
+        title = title.format(masterName=master.name, familyName=master.parent.familyName)
         self.window = window = vanilla.Window(
             (width, height),
-            f"MATH Constants for master ‘{master.name}’ from {master.font.familyName}",
+            title,
         )
         tabs = {
-            "General": MATH_CONSTANTS_GENERAL,
-            "Sub/Superscript": MATH_CONSTANTS_SCRIPTS,
-            "Limits": MATH_CONSTANTS_LIMITS,
-            "Stacks": MATH_CONSTANTS_STACKS,
-            "Fractions": MATH_CONSTANTS_FRACTIONS,
-            "Over/Underbar": MATH_CONSTANTS_BARS,
-            "Radicals": MATH_CONSTANTS_RADICALS,
+            NSLocalizedString("General", ""): MATH_CONSTANTS_GENERAL,
+            NSLocalizedString("Sub/Superscript", ""): MATH_CONSTANTS_SCRIPTS,
+            NSLocalizedString("Limits", ""): MATH_CONSTANTS_LIMITS,
+            NSLocalizedString("Stacks", ""): MATH_CONSTANTS_STACKS,
+            NSLocalizedString("Fractions", ""): MATH_CONSTANTS_FRACTIONS,
+            NSLocalizedString("Over/Underbar", ""): MATH_CONSTANTS_BARS,
+            NSLocalizedString("Radicals", ""): MATH_CONSTANTS_RADICALS,
         }
 
         uformatter = AppKit.NSNumberFormatter.new()
@@ -650,7 +660,7 @@ class ConstantsWindow:
                     "🪄",
                     callback=self.guessCallback,
                 )
-                box.button.getNSButton().setToolTip_("Guess value")
+                box.button.getNSButton().setToolTip_(NSLocalizedString("Guess value", ""))
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
                 box.addAutoPosSizeRules(
@@ -871,31 +881,29 @@ class MATHPlugin(GeneralPlugin):
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
         GSCallbackHandler.addCallback_forOperation_(self, "GSPrepareLayerCallback")
 
-        menuItem = self.newMenuItem_("Show MATH Italic Correction", self.toggleShowIC_)
+        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Italic Correction", ""), self.toggleShowIC_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_(
-            "Show MATH Top Accent Position", self.toggleShowTA_
-        )
+        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Top Accent Position", ""), self.toggleShowTA_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Show MATH Cut-ins", self.toggleShowMK_)
+        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Cut-ins", ""), self.toggleShowMK_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Show MATH Variants", self.toggleShowGV_)
+        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Variants", ""), self.toggleShowGV_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Show MATH Assembly", self.toggleShowGA_)
+        menuItem = self.newMenuItem_(NSLocalizedString("Show MATH Assembly", ""), self.toggleShowGA_)
         Glyphs.menu[VIEW_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Edit MATH Variants...", self.editGlyph_, False)
+        menuItem = self.newMenuItem_(NSLocalizedString("Edit MATH Variants…", ""), self.editGlyph_, False)
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSShiftKeyMask
         )
         menuItem.setKeyEquivalent_("x")
         Glyphs.menu[GLYPH_MENU].append(menuItem)
 
-        menuItem = self.newMenuItem_("Edit MATH Constants...", self.editFont_, False)
+        menuItem = self.newMenuItem_(NSLocalizedString("Edit MATH Constants…", ""), self.editFont_, False)
         menuItem.setKeyEquivalentModifierMask_(
             AppKit.NSCommandKeyMask | AppKit.NSAlternateKeyMask
         )
