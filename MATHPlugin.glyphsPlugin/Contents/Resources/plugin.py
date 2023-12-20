@@ -528,8 +528,65 @@ class VariantsWindow:
             items = []
             for i, part in enumerate(parts):
                 ext = bool(i % 2)
-                start = 0
-                end = 0
+                layer = part.layers[self.layer.associatedMasterId]
+                # Guess start and end connector lengths.
+                #
+                # This is rather crude. The idea is to find the line segments in the
+                # respective direction (vertical or horizontal) that are at the
+                # respective end (top/bottom, right/left).
+                # If the line segmnets are in pairs, we assume these are straight stems
+                # ans then take the length of the shortest of those segments.
+                #
+                # The first (top or left) part is skipped for start connector length,
+                # ditto for the last (bottom or right) part for end connector length.
+                start = end = 0
+                for shape in layer.shapes:
+                    path = shape.bezierPath
+                    if vertical:
+                        # Find vertical lines
+                        lines = [
+                            s.bounds
+                            for s in path.segments()
+                            if int(s.bounds.size.height)
+                            and not int(s.bounds.size.width)
+                        ]
+                        # Find lines at top and bottom
+                        starts = [
+                            l for l in lines if l.origin.y == layer.bounds.origin.y
+                        ]
+                        ends = [
+                            l
+                            for l in lines
+                            if (l.origin.y + l.size.height)
+                            == (layer.bounds.origin.y + layer.bounds.size.height)
+                        ]
+                        if (i != 0) and (len(starts) % 2) == 0:
+                            start = min(a.size.height for a in starts)
+                        if (i < len(parts) - 1) and (len(ends) % 2) == 0:
+                            end = min(a.size.height for a in ends)
+                    else:
+                        # Find horizontal lines
+                        lines = [
+                            s.bounds
+                            for s in path.segments()
+                            if int(s.bounds.size.width)
+                            and not int(s.bounds.size.height)
+                        ]
+                        # Find lines at left and right
+                        starts = [
+                            l for l in lines if l.origin.x == layer.bounds.origin.x
+                        ]
+                        ends = [
+                            l
+                            for l in lines
+                            if (l.origin.x + l.size.width)
+                            == (layer.bounds.origin.x + layer.bounds.size.width)
+                        ]
+                        if (i != 0) and (len(starts) % 2) == 0:
+                            start = min(a.size.width for a in starts)
+                        if (i < len(parts) - 1) and (len(ends) % 2) == 0:
+                            end = min(a.size.width for a in ends)
+
                 items.append({"g": part.name, "f": ext, "s": start, "e": end})
             tab.alist.set(items)
             self.listEditCallback(tab.alist)
