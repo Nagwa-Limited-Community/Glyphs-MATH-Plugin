@@ -320,14 +320,8 @@ class VariantsWindow:
                 [],
                 columnDescriptions=[
                     {"key": "g", "title": NSLocalizedString("Glyph", "")},
-                    {
-                        "key": "s",
-                        "title": NSLocalizedString("Start Connector", ""),
-                    },
-                    {
-                        "key": "e",
-                        "title": NSLocalizedString("End Connector", ""),
-                    },
+                    {"key": "s", "title": NSLocalizedString("Start Connector", "")},
+                    {"key": "e", "title": NSLocalizedString("End Connector", "")},
                     {
                         "key": "f",
                         "title": NSLocalizedString("Extender", ""),
