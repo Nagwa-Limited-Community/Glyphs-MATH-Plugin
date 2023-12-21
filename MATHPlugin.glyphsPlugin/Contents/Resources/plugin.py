@@ -560,9 +560,9 @@ class VariantsWindow:
                             if (l.origin.y + l.size.height)
                             == (layer.bounds.origin.y + layer.bounds.size.height)
                         ]
-                        if (i != 0) and (len(starts) % 2) == 0:
+                        if i != 0 and len(starts) and (len(starts) % 2) == 0:
                             start = min(a.size.height for a in starts)
-                        if (i < len(parts) - 1) and (len(ends) % 2) == 0:
+                        if (i < len(parts) - 1) and len(ends) and (len(ends) % 2) == 0:
                             end = min(a.size.height for a in ends)
                     else:
                         # Find horizontal lines
@@ -582,9 +582,9 @@ class VariantsWindow:
                             if (l.origin.x + l.size.width)
                             == (layer.bounds.origin.x + layer.bounds.size.width)
                         ]
-                        if (i != 0) and (len(starts) % 2) == 0:
+                        if i != 0 and len(starts) and (len(starts) % 2) == 0:
                             start = min(a.size.width for a in starts)
-                        if (i < len(parts) - 1) and (len(ends) % 2) == 0:
+                        if (i < len(parts) - 1) and len(ends) and (len(ends) % 2) == 0:
                             end = min(a.size.width for a in ends)
 
                 items.append({"g": part.name, "f": ext, "s": start, "e": end})
