@@ -1253,39 +1253,90 @@ class MATHPlugin(GeneralPlugin):
         else:
             AppKit.NSColor.blueColor().set()
 
-        translate(layer.width, 0)
+        x = layer.width
+        y = 0
         for variant in variants:
-            glyph = gl(variant)
-            variant_layer = glyph.layers[layer.layerId]
-            translate(variant_layer.bounds.origin.x, 0)
-            path = variant_layer.completeBezierPath
+            save()
+            translate(x, y)
+            variantLayer = gl(variant).layers[layer.layerId]
+            path = variantLayer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
-            translate(variant_layer.width, 0)
+            x += variantLayer.width
+            restore()
+
+        if not assembly:
+            restore()
+            return
 
         minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
             "MinConnectorOverlap", 0
         )
 
+        # Draw assembly.
+
+        # First at the maximum size (applying only MinConnectorOverlap)
         if vertical:
-            # ensure assembly is centered vertically
+            # Vertically center the assembly
             h = sum(gl(a[0]).layers[layer.layerId].bounds.size.height for a in assembly)
             h -= (len(assembly) - 1) * minoverlap
             d = layer.bounds.size.height - h
-            translate(0, layer.bounds.origin.y + d / 2)
+            y = layer.bounds.origin.y + d / 2
 
-        for gref, flag, bot, top in assembly:
-            glyph = gl(gref)
-            gref_layer = glyph.layers[layer.layerId]
-            path = gref_layer.completeBezierPath
+        for gref, _, _, _ in assembly:
+            save()
+            translate(x, y)
+            partLayer = gl(gref).layers[layer.layerId]
+            path = partLayer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
 
-            w, h = _getMetrics(gref_layer)
+            w, h = _getMetrics(partLayer)
             if vertical:
-                translate(0, h - minoverlap)
+                y += h - minoverlap
             else:
-                translate(w - minoverlap, 0)
+                x += w - minoverlap
+            restore()
+
+        # Then at the minimum size
+        if vertical:
+            # Vertically center the assembly
+            x += partLayer.width
+            h = 0
+            prev = 0
+            for gref, _, start, end in assembly:
+                overlap = max(min(start, prev), minoverlap)
+                prev = end
+                partLayer = gl(gref).layers[layer.layerId]
+                h += _getMetrics(partLayer)[1] - overlap
+            d = layer.bounds.size.height - h
+            y = layer.bounds.origin.y + d / 2
+        else:
+            x += minoverlap * 2
+
+        prev = 0
+        for gref, _, start, end in assembly:
+            save()
+            overlap = max(min(start, prev), minoverlap)
+            prev = end
+
+            partLayer = gl(gref).layers[layer.layerId]
+            w, h = _getMetrics(partLayer)
+            if vertical:
+                y -= overlap
+            else:
+                x -= overlap
+
+            translate(x, y)
+            if vertical:
+                y += h
+            else:
+                x += w
+
+            path = partLayer.completeBezierPath
+            path.setLineWidth_(width)
+            path.stroke()
+            restore()
 
         restore()
 
