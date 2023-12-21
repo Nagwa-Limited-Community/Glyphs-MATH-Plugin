@@ -611,7 +611,7 @@ class VariantsWindow:
                 varData = {k: list(v) for k, v in varData.items()}
                 var = [self.glyphRef(n) for n in new.split()]
                 varData[variantsId] = var
-            else:
+            elif variantsId in varData:
                 del varData[variantsId]
             glyph.userData[VARIANTS_ID] = dict(varData)
         except:
@@ -640,7 +640,7 @@ class VariantsWindow:
             if new:
                 varData = {k: list(v) for k, v in varData.items()}
                 varData[assemblyId] = new
-            else:
+            elif assemblyId in varData:
                 del varData[assemblyId]
             layer.userData[VARIANTS_ID] = dict(varData)
         except:
