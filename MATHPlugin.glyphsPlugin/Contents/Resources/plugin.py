@@ -1578,7 +1578,6 @@ class MATHPlugin(GeneralPlugin):
                 return
 
             font = instance.interpolatedFont
-            self.interpolateMathData(instance)
 
             with TTFont(path) as ttFont:
                 self.buildMathTable(font, ttFont)
@@ -1587,55 +1586,6 @@ class MATHPlugin(GeneralPlugin):
                     self.notification_("MATH table exported successfully")
         except:
             _message(f"Export failed:\n{traceback.format_exc()}")
-
-    @staticmethod
-    def interpolateMathData(instance):
-        font = instance.font
-        master = font.masters[0]
-
-        # Interpolate math constants
-        constants = {}
-        for c in MATH_CONSTANTS:
-            value = 0
-            for masterId, factor in instance.instanceInterpolations.items():
-                userData = font.masters[masterId].userData.get(CONSTANTS_ID, {})
-                if v := userData.get(c):
-                    value += v * factor
-            constants[c] = round(value)
-        master.userData[CONSTANTS_ID] = dict(constants)
-
-        # Interpolate start and end connector lengths of assemblies
-        for glyph in font.glyphs:
-            layer = glyph.layers[master.id]
-            if varData := layer.userData.get(VARIANTS_ID, {}):
-                if hassembly := varData.get(H_ASSEMBLY_ID):
-                    for i, _ in enumerate(hassembly):
-                        start = 0
-                        end = 0
-                        for masterId, factor in instance.instanceInterpolations.items():
-                            masterAssembly = (
-                                glyph.layers[masterId]
-                                .userData.get(VARIANTS_ID, {})
-                                .get(H_ASSEMBLY_ID, [])
-                            )
-                            if i < len(masterAssembly):
-                                start += masterAssembly[i][2] * factor
-                                end += masterAssembly[i][3] * factor
-                        hassembly[i] = (hassembly[i][0], hassembly[i][1], start, end)
-                if vassembly := varData.get(V_ASSEMBLY_ID):
-                    for i, _ in enumerate(vassembly):
-                        start = 0
-                        end = 0
-                        for masterId, factor in instance.instanceInterpolations.items():
-                            masterAssembly = (
-                                glyph.layers[masterId]
-                                .userData.get(VARIANTS_ID, {})
-                                .get(V_ASSEMBLY_ID, [])
-                            )
-                            if i < len(masterAssembly):
-                                start += masterAssembly[i][2] * factor
-                                end += masterAssembly[i][3] * factor
-                        vassembly[i] = (vassembly[i][0], vassembly[i][1], start, end)
 
     @staticmethod
     def buildMathTable(font, ttFont):
@@ -1845,12 +1795,51 @@ class MATHPlugin(GeneralPlugin):
     def interpolateLayer_glyph_interpolation_error_(
         self, layer, glyph, interpolation, error
     ):
-        print("__interpolateLayer", layer, glyph, interpolation)
+        # Interpolate start and end connector lengths of assemblies
+        if varData := layer.userData.get(VARIANTS_ID, {}):
+            if hassembly := varData.get(H_ASSEMBLY_ID):
+                for i, _ in enumerate(hassembly):
+                    start = 0
+                    end = 0
+                    for masterId, factor in interpolation.items():
+                        masterAssembly = (
+                            glyph.layers[masterId]
+                            .userData.get(VARIANTS_ID, {})
+                            .get(H_ASSEMBLY_ID, [])
+                        )
+                        if i < len(masterAssembly):
+                            start += masterAssembly[i][2] * factor
+                            end += masterAssembly[i][3] * factor
+                    hassembly[i] = (hassembly[i][0], hassembly[i][1], start, end)
+            if vassembly := varData.get(V_ASSEMBLY_ID):
+                for i, _ in enumerate(vassembly):
+                    start = 0
+                    end = 0
+                    for masterId, factor in interpolation.items():
+                        masterAssembly = (
+                            glyph.layers[masterId]
+                            .userData.get(VARIANTS_ID, {})
+                            .get(V_ASSEMBLY_ID, [])
+                        )
+                        if i < len(masterAssembly):
+                            start += masterAssembly[i][2] * factor
+                            end += masterAssembly[i][3] * factor
+                    vassembly[i] = (vassembly[i][0], vassembly[i][1], start, end)
         return (True, None)
 
     @objc.typedSelector(b"c32@:@@@o^@")
     def interpolateMaster_font_interpolation_error_(
         self, master, font, interpolation, error
     ):
-        print("__interpolateMaster")
+        # Interpolate math constants
+        constants = {}
+        for c in MATH_CONSTANTS:
+            value = 0
+            for masterId, factor in interpolation.items():
+                userData = font.masters[masterId].userData.get(CONSTANTS_ID, {})
+                if v := userData.get(c):
+                    value += v * factor
+            constants[c] = round(value)
+        master.userData[CONSTANTS_ID] = dict(constants)
+
         return (True, None)
