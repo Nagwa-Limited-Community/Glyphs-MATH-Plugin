@@ -1349,9 +1349,12 @@ class MATHPlugin(GeneralPlugin):
             font = doc.font
 
             try:
-                ttFont = TTFont(doc.filePath, font.tempData.get("TTCFontIndex", 0))
-            except Exception:
-                pass
+                ttFont = TTFont(
+                    doc.filePath,
+                    fontNumber=font.tempData.get("TTCFontIndex", 0),
+                )
+            except Exception as ex:
+                print(ex)
             else:
                 try:
                     self.importMathTable(font, ttFont)
