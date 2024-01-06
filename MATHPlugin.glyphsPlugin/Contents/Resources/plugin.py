@@ -1425,6 +1425,14 @@ class MATHPlugin(GeneralPlugin):
         if table.Version != 0x00010000:
             return
 
+        def get_glyph(gname):
+            if gname in font.glyphs:
+                return font.glyphs[gname]
+            glyphOrder = ttFont.getGlyphOrder()
+            if gname in glyphOrder:
+                return font.glyphs[glyphOrder.index(gname)]
+            return None
+
         constants = {}
         if table.MathConstants:
             for constant in MATH_CONSTANTS:
@@ -1438,7 +1446,7 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     italic.Coverage.glyphs, italic.ItalicsCorrection
                 ):
-                    layer = font.glyphs[name].layers[master.id]
+                    layer = get_glyph(name).layers[master.id]
                     layer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
                     layer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
                         layer.width + value.Value,
@@ -1449,19 +1457,19 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     accent.TopAccentCoverage.glyphs, accent.TopAccentAttachment
                 ):
-                    layer = font.glyphs[name].layers[master.id]
+                    layer = get_glyph(name).layers[master.id]
                     layer.anchors[TOP_ACCENT_ANCHOR] = GSAnchor()
                     layer.anchors[TOP_ACCENT_ANCHOR].position = (value.Value, 0)
 
             if extended := info.ExtendedShapeCoverage:
                 for name in extended.glyphs:
-                    font.glyphs[name].userData[EXTENDED_SHAPE_ID] = True
+                    get_glyph(name).userData[EXTENDED_SHAPE_ID] = True
 
             if kerninfo := info.MathKernInfo:
                 for name, value in zip(
                     kerninfo.MathKernCoverage.glyphs, kerninfo.MathKernInfoRecords
                 ):
-                    layer = font.glyphs[name].layers[master.id]
+                    layer = get_glyph(name).layers[master.id]
 
                     if kern := value.TopRightMathKern:
                         heights = kern.CorrectionHeight + [
@@ -1507,17 +1515,19 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     vvariants.glyphs, variants.VertGlyphConstruction
                 ):
-                    glyph = font.glyphs[name]
+                    glyph = get_glyph(name)
                     varData = glyph.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
-                        varData[V_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                        varData[V_VARIANTS_ID] = [
+                            get_glyph(v.VariantGlyph).name for v in records
+                        ]
                     glyph.userData[VARIANTS_ID] = dict(varData)
 
                     layer = glyph.layers[master.id]
                     if assembly := value.GlyphAssembly:
                         varData[V_ASSEMBLY_ID] = [
                             [
-                                p.glyph,
+                                get_glyph(p.glyph).name,
                                 p.PartFlags,
                                 p.StartConnectorLength,
                                 p.EndConnectorLength,
@@ -1526,7 +1536,7 @@ class MATHPlugin(GeneralPlugin):
                         ]
                         if ic := assembly.ItalicsCorrection:
                             part = varData[V_ASSEMBLY_ID][-1]
-                            partLayer = font.glyphs[part[0]].layers[master.id]
+                            partLayer = get_glyph(part[0]).layers[master.id]
                             partLayer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
                             partLayer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
                                 partLayer.width + ic.Value,
@@ -1538,10 +1548,12 @@ class MATHPlugin(GeneralPlugin):
                 for name, value in zip(
                     hvariants.glyphs, variants.HorizGlyphConstruction
                 ):
-                    glyph = font.glyphs[name]
+                    glyph = get_glyph(name)
                     varData = glyph.userData.get(VARIANTS_ID, {})
                     if records := value.MathGlyphVariantRecord:
-                        varData[H_VARIANTS_ID] = [v.VariantGlyph for v in records]
+                        varData[H_VARIANTS_ID] = [
+                            get_glyph(v.VariantGlyph).name for v in records
+                        ]
                     glyph.userData[VARIANTS_ID] = dict(varData)
 
                     layer = glyph.layers[master.id]
@@ -1549,7 +1561,7 @@ class MATHPlugin(GeneralPlugin):
                     if assembly := value.GlyphAssembly:
                         varData[H_ASSEMBLY_ID] = [
                             [
-                                p.glyph,
+                                get_glyph(p.glyph).name,
                                 p.PartFlags,
                                 p.StartConnectorLength,
                                 p.EndConnectorLength,
@@ -1558,7 +1570,7 @@ class MATHPlugin(GeneralPlugin):
                         ]
                         if ic := assembly.ItalicsCorrection:
                             part = varData[H_ASSEMBLY_ID][-1]
-                            partLayer = font.glyphs[part[0]].layers[master.id]
+                            partLayer = get_glyph(part[0]).layers[master.id]
                             partLayer.anchors[ITALIC_CORRECTION_ANCHOR] = GSAnchor()
                             partLayer.anchors[ITALIC_CORRECTION_ANCHOR].position = (
                                 partLayer.width + ic.Value,
