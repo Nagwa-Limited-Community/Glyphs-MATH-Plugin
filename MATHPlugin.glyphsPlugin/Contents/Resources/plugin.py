@@ -1352,6 +1352,8 @@ class MATHPlugin(GeneralPlugin):
                 ttFont = TTFont(
                     doc.filePath,
                     fontNumber=font.tempData.get("TTCFontIndex", 0),
+                    lazy=True,
+                    recalcBBoxes=False,
                 )
             except Exception as ex:
                 print(ex)
