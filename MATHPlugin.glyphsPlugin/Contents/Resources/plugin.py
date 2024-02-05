@@ -944,7 +944,9 @@ class ConstantsWindow:
         elif constant == "MinConnectorOverlap":
             value = 0.05 * font.upm
 
-        return round(value)
+        if value is not None:
+            value = round(value)
+        return value
 
     def guessCallback(self, sender):
         constant = MATH_CONSTANTS[sender.getNSButton().tag()]
