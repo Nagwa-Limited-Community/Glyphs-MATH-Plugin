@@ -444,7 +444,14 @@ class VariantsWindow:
 
             for suffix in suffixes:
                 prefix = f"{name}.{suffix}"
-                if variants := [a for a in alternates if a.startswith(prefix)]:
+                n_prefix = len(prefix)
+                variants = []
+                for alternate in alternates:
+                    if alternate.startswith(prefix) and alternate[n_prefix:].isdigit():
+                        variants.append(alternate)
+                    elif alternate == prefix:
+                        variants.append(alternate)
+                if variants:
                     tab = self.window.tabs[tag]
                     tab.vedit.set(" ".join([name] + variants))
                     self.editTextCallback(tab.vedit)
