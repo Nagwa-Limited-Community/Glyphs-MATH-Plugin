@@ -946,7 +946,8 @@ class ConstantsWindow:
     def editTextCallback(self, sender):
         constants = self.constants
         value = sender.get()
-        value = value if value is None else int(value)
+        if value is not None:
+            value = int(round(value))
         tag = sender.getNSTextField().tag()
 
         constant = MATH_CONSTANTS[tag]
