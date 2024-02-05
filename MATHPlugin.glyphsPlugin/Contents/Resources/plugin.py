@@ -620,7 +620,10 @@ class VariantsWindow:
                 varData[variantsId] = var
             elif variantsId in varData:
                 del varData[variantsId]
-            glyph.userData[VARIANTS_ID] = dict(varData)
+            if varData:
+                glyph.userData[VARIANTS_ID] = dict(varData)
+            elif VARIANTS_ID in glyph.userData:
+                del glyph.userData[VARIANTS_ID]
         except:
             _message(traceback.format_exc())
 
