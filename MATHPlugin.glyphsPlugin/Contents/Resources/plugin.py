@@ -1187,7 +1187,7 @@ class MATHPlugin(GeneralPlugin):
         constants = master.userData.get(CONSTANTS_ID, {})
         accentBase = constants.get("AccentBaseHeight", master.xHeight)
 
-        height = layer.bounds.size.height
+        height = layer.bounds.origin.y + layer.bounds.size.height
         dy = height - min(height, accentBase)
 
         AppKit.NSColor.colorWithDeviceWhite_alpha_(0, 0.2).set()
