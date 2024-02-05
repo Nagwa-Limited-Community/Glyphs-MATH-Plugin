@@ -1398,18 +1398,15 @@ class MATHPlugin(GeneralPlugin):
                         for k, v in varData.items()
                         if k in (H_ASSEMBLY_ID, V_ASSEMBLY_ID)
                     }
-                    if not layerData:
-                        continue
-
-                    glyphData = {
-                        k: v
-                        for k, v in varData.items()
-                        if k in (H_VARIANTS_ID, V_VARIANTS_ID)
-                    }
-                    for master in font.masters:
-                        layer = glyph.layers[master.id]
-                        layer.userData[VARIANTS_ID] = layerData
-                    glyph.userData[VARIANTS_ID] = glyphData
+                    if layerData:
+                        for master in font.masters:
+                            layer = glyph.layers[master.id]
+                            layer.userData[VARIANTS_ID] = layerData
+                        glyph.userData[VARIANTS_ID] = {
+                            k: v
+                            for k, v in varData.items()
+                            if k in (H_VARIANTS_ID, V_VARIANTS_ID)
+                        }
 
                 # Convert glyph names in userData to GSGlyphReference
                 varData = glyph.userData.get(VARIANTS_ID, {})
