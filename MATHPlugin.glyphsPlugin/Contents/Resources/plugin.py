@@ -523,6 +523,8 @@ class VariantsWindow:
                     names = ["23AD", "23AA", "23A7"]
                 elif unicode == "23B1":
                     names = ["23A9", "23AA", "23AB"]
+                elif unicode in {"007C", "2016", "2223", "2225", "2980", "0305"}:
+                    names = [name, name]
 
                 parts = [font.glyphs[n] for n in names]
                 if not all(parts):
