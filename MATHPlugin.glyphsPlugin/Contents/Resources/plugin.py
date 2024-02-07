@@ -464,25 +464,33 @@ class VariantsWindow:
         font = glyph.parent
         name = glyph.name
 
+        if (ext := font.glyphs[name + ".ext"]) is None:
+            return
+
+        mid = font.glyphs[name + ".mid"]
         if vertical:
-            if (top := font.glyphs[name + ".top"]) is None:
+            top = font.glyphs[name + ".top"]
+            bot = font.glyphs[name + ".bot"]
+            if not top and not bot:
                 return
-            if (bot := font.glyphs[name + ".bot"]) is None:
-                return
-            if (ext := font.glyphs[name + ".ext"]) is None:
-                return
-            if mid := font.glyphs[name + ".mid"]:
+            if bot and not top:
+                parts = [bot, ext]
+            elif top and not bot:
+                parts = [ext, top]
+            elif mid:
                 parts = [bot, ext, mid, ext, top]
             else:
                 parts = [bot, ext, top]
         else:
-            if (lft := font.glyphs[name + ".lft"]) is None:
+            lft = font.glyphs[name + ".lft"]
+            rgt = font.glyphs[name + ".rgt"]
+            if not lft and not rgt:
                 return
-            if (rgt := font.glyphs[name + ".rgt"]) is None:
-                return
-            if (ext := font.glyphs[name + ".ext"]) is None:
-                return
-            if mid := font.glyphs[name + ".mid"]:
+            if lft and not rgt:
+                parts = [lft, ext]
+            elif rgt and not lft:
+                parts = [ext, rgt]
+            elif mid:
                 parts = [lft, ext, mid, ext, rgt]
             else:
                 parts = [lft, ext, rgt]
