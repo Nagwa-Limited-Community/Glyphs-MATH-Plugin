@@ -987,6 +987,15 @@ class ConstantsWindow:
             del self.master.userData[CONSTANTS_ID]
 
 
+def dashedLine(pt1, pt2, width):
+    path = AppKit.NSBezierPath.bezierPath()
+    path.setLineWidth_(width)
+    path.setLineDash_count_phase_((width * 2, width * 2), 2, 0)
+    path.moveToPoint_((pt1.x, pt1.y))
+    path.lineToPoint_((pt2.x, pt2.y))
+    path.stroke()
+
+
 class MATHPlugin(GeneralPlugin):
     @objc.python_method
     def settings(self):
@@ -1218,8 +1227,8 @@ class MATHPlugin(GeneralPlugin):
     @staticmethod
     def drawMathKern(layer, width):
         save()
+        bounds = layer.bounds
         master = layer.master
-        constants = master.userData.get(CONSTANTS_ID, {})
         for name in (
             KERN_TOP_RIGHT_ANCHOR,
             KERN_TOP_LEFT_ANCHOR,
@@ -1244,20 +1253,15 @@ class MATHPlugin(GeneralPlugin):
                 AppKit.NSColor.redColor().set()
             for i, pt in enumerate(points):
                 if i == 0:
-                    y = master.descender
-                    if name in (KERN_TOP_RIGHT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                        y = constants.get("SuperscriptBottomMin", 0)
-                    line.moveToPoint_((pt.x, min(pt.y, y)))
+                    y = min(bounds.origin.y, master.descender)
+                    dashedLine(pt, AppKit.NSPoint(pt.x, y), width * 2)
+                    line.moveToPoint_((pt.x, pt.y))
                 line.lineToPoint_((pt.x, pt.y))
                 if i < len(points) - 1:
                     line.lineToPoint_((points[i + 1].x, pt.y))
                 else:
-                    y = 0
-                    if name in (KERN_TOP_RIGHT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
-                        y = constants.get(
-                            "SuperscriptBottomMaxWithSubscript", master.ascender
-                        )
-                    line.lineToPoint_((pt.x, max(pt.y, y)))
+                    y = max(bounds.origin.y + bounds.size.height, master.descender)
+                    dashedLine(pt, AppKit.NSPoint(pt.x, y), width * 2)
             line.stroke()
         restore()
 
