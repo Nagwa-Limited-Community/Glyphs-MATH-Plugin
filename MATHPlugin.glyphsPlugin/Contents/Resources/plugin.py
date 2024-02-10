@@ -42,7 +42,7 @@ H_ASSEMBLY_ID = "hAssembly"
 ITALIC_CORRECTION_ANCHOR = "math.ic"
 TOP_ACCENT_ANCHOR = "math.ta"
 
-KERN_TOP_RIHGT_ANCHOR = "math.tr"
+KERN_TOP_RIGHT_ANCHOR = "math.tr"
 KERN_TOP_LEFT_ANCHOR = "math.tl"
 KERN_BOTTOM_RIGHT_ANCHOR = "math.br"
 KERN_BOTTOM_LEFT_ANCHOR = "math.bl"
@@ -385,8 +385,8 @@ class VariantsWindow:
                     items.append(dict(zip(("g", "f", "s", "e"), part)))
                 window.tabs[1].alist.set(items)
 
-        if exended := glyph.userData[EXTENDED_SHAPE_ID]:
-            window.tabs[0].check.set(bool(exended))
+        if extended := glyph.userData[EXTENDED_SHAPE_ID]:
+            window.tabs[0].check.set(bool(extended))
 
     def open(self):
         self.window.open()
@@ -551,7 +551,7 @@ class VariantsWindow:
                 # This is rather crude. The idea is to find the line segments in the
                 # respective direction (vertical or horizontal) that are at the
                 # respective end (top/bottom, right/left).
-                # If the line segmnets are in pairs, we assume these are straight stems
+                # If the line segments are in pairs, we assume these are straight stems
                 # ans then take the length of the shortest of those segments.
                 #
                 # The first (top or left) part is skipped for start connector length,
@@ -1221,7 +1221,7 @@ class MATHPlugin(GeneralPlugin):
         master = layer.master
         constants = master.userData.get(CONSTANTS_ID, {})
         for name in (
-            KERN_TOP_RIHGT_ANCHOR,
+            KERN_TOP_RIGHT_ANCHOR,
             KERN_TOP_LEFT_ANCHOR,
             KERN_BOTTOM_RIGHT_ANCHOR,
             KERN_BOTTOM_LEFT_ANCHOR,
@@ -1234,7 +1234,7 @@ class MATHPlugin(GeneralPlugin):
 
             line = AppKit.NSBezierPath.bezierPath()
             line.setLineWidth_(width * 2)
-            if name == KERN_TOP_RIHGT_ANCHOR:
+            if name == KERN_TOP_RIGHT_ANCHOR:
                 AppKit.NSColor.greenColor().set()
             elif name == KERN_TOP_LEFT_ANCHOR:
                 AppKit.NSColor.blueColor().set()
@@ -1245,7 +1245,7 @@ class MATHPlugin(GeneralPlugin):
             for i, pt in enumerate(points):
                 if i == 0:
                     y = master.descender
-                    if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                    if name in (KERN_TOP_RIGHT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
                         y = constants.get("SuperscriptBottomMin", 0)
                     line.moveToPoint_((pt.x, min(pt.y, y)))
                 line.lineToPoint_((pt.x, pt.y))
@@ -1253,7 +1253,7 @@ class MATHPlugin(GeneralPlugin):
                     line.lineToPoint_((points[i + 1].x, pt.y))
                 else:
                     y = 0
-                    if name in (KERN_TOP_RIHGT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
+                    if name in (KERN_TOP_RIGHT_ANCHOR, KERN_TOP_LEFT_ANCHOR):
                         y = constants.get(
                             "SuperscriptBottomMaxWithSubscript", master.ascender
                         )
@@ -1498,7 +1498,7 @@ class MATHPlugin(GeneralPlugin):
                             table.MathConstants.SuperscriptBottomMaxWithSubscript
                         ]
                         for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
-                            aname = f"{KERN_TOP_RIHGT_ANCHOR}.{i}"
+                            aname = f"{KERN_TOP_RIGHT_ANCHOR}.{i}"
                             layer.anchors[aname] = GSAnchor()
                             layer.anchors[aname].position = (
                                 x.Value + layer.width,
@@ -1657,7 +1657,7 @@ class MATHPlugin(GeneralPlugin):
                     accent[name] = _valueRecord(anchor.position.x)
                 else:
                     for aname in (
-                        KERN_TOP_RIHGT_ANCHOR,
+                        KERN_TOP_RIGHT_ANCHOR,
                         KERN_TOP_LEFT_ANCHOR,
                         KERN_BOTTOM_RIGHT_ANCHOR,
                         KERN_BOTTOM_LEFT_ANCHOR,
