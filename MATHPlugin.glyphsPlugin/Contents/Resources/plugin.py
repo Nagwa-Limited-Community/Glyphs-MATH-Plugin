@@ -293,25 +293,25 @@ class VariantsWindow:
         self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
-            vbox = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
-            vbutton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
-            vbutton.getNSButton().setTag_(i)
-            setattr(self, f"vbutton{i}", vbutton)
-            tab.vstack = vanilla.HorizontalStackView(
-                "auto", [{"view": vbox}, {"view": vbutton, "width": 24}]
+            vBox = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
+            vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
+            vButton.getNSButton().setTag_(i)
+            setattr(self, f"vButton{i}", vButton)
+            tab.vStack = vanilla.HorizontalStackView(
+                "auto", [{"view": vBox}, {"view": vButton, "width": 24}]
             )
 
-            tab.vedit = vanilla.EditText(
+            tab.vEdit = vanilla.EditText(
                 "auto", continuous=False, callback=self.editTextCallback
             )
-            tab.vedit.getNSTextField().setTag_(i)
+            tab.vEdit.getNSTextField().setTag_(i)
 
-            abox = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
-            abutton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
-            abutton.getNSButton().setTag_(i)
-            setattr(self, f"abutton{i}", abutton)
-            tab.astack = vanilla.HorizontalStackView(
-                "auto", [{"view": abox}, {"view": abutton, "width": 24}]
+            aBox = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
+            aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
+            aButton.getNSButton().setTag_(i)
+            setattr(self, f"aButton{i}", aButton)
+            tab.aStack = vanilla.HorizontalStackView(
+                "auto", [{"view": aBox}, {"view": aButton, "width": 24}]
             )
 
             prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
@@ -320,9 +320,9 @@ class VariantsWindow:
             next.bind("]", ["command"])
             setattr(self, f"prev{i}", prev)
             setattr(self, f"next{i}", next)
-            tab.prevnext = vanilla.HorizontalStackView("auto", [prev, next])
+            tab.prevNext = vanilla.HorizontalStackView("auto", [prev, next])
 
-            tab.alist = vanilla.List(
+            tab.aList = vanilla.List(
                 "auto",
                 [],
                 columnDescriptions=[
@@ -341,7 +341,7 @@ class VariantsWindow:
                 editCallback=self.listEditCallback,
                 doubleClickCallback=self.listDoubleClickCallback,
             )
-            tab.alist.getNSTableView().setTag_(i)
+            tab.aList.getNSTableView().setTag_(i)
 
             tab.check = vanilla.CheckBox(
                 "auto",
@@ -351,39 +351,39 @@ class VariantsWindow:
             tab.check.show(i == 0)
 
             rules = [
-                "V:|-[vstack]-[vedit(40)]-[astack]-[alist]-[check]-[prevnext]-|",
-                f"H:|-[vstack({width})]-|",
-                "H:|-[vedit]-|",
-                f"H:|-[astack({width})]-|",
-                "H:|-[alist]-|",
+                "V:|-[vStack]-[vEdit(40)]-[aStack]-[aList]-[check]-[prevNext]-|",
+                f"H:|-[vStack({width})]-|",
+                "H:|-[vEdit]-|",
+                f"H:|-[aStack({width})]-|",
+                "H:|-[aList]-|",
                 "H:|-[check]-|",
-                "H:|-[prevnext]-|",
+                "H:|-[prevNext]-|",
             ]
             tab.addAutoPosSizeRules(rules)
 
         if varData := glyph.userData[VARIANTS_ID]:
-            if vvars := varData.get(V_VARIANTS_ID):
-                window.tabs[0].vedit.set(" ".join(str(v) for v in vvars))
-            if hvars := varData.get(H_VARIANTS_ID):
-                window.tabs[1].vedit.set(" ".join(str(v) for v in hvars))
+            if vVars := varData.get(V_VARIANTS_ID):
+                window.tabs[0].vEdit.set(" ".join(str(v) for v in vVars))
+            if hVars := varData.get(H_VARIANTS_ID):
+                window.tabs[1].vEdit.set(" ".join(str(v) for v in hVars))
 
         if varData := layer.userData[VARIANTS_ID]:
-            if vassembly := varData.get(V_ASSEMBLY_ID):
+            if vAssembly := varData.get(V_ASSEMBLY_ID):
                 items = []
-                for part in vassembly:
+                for part in vAssembly:
                     part = list(part)
                     part[0] = str(part[0])
                     part[1] = bool(part[1])
                     items.append(dict(zip(("g", "f", "s", "e"), part)))
-                window.tabs[0].alist.set(items)
-            if hassembly := varData.get(H_ASSEMBLY_ID):
+                window.tabs[0].aList.set(items)
+            if hAssembly := varData.get(H_ASSEMBLY_ID):
                 items = []
-                for part in hassembly:
+                for part in hAssembly:
                     part = list(part)
                     part[0] = str(part[0])
                     part[1] = bool(part[1])
                     items.append(dict(zip(("g", "f", "s", "e"), part)))
-                window.tabs[1].alist.set(items)
+                window.tabs[1].aList.set(items)
 
         if extended := glyph.userData[EXTENDED_SHAPE_ID]:
             window.tabs[0].check.set(bool(extended))
@@ -453,8 +453,8 @@ class VariantsWindow:
                         variants.append(alternate)
                 if variants:
                     tab = self.window.tabs[tag]
-                    tab.vedit.set(" ".join([name] + variants))
-                    self.editTextCallback(tab.vedit)
+                    tab.vEdit.set(" ".join([name] + variants))
+                    self.editTextCallback(tab.vEdit)
                     return
         except:
             _message(traceback.format_exc())
@@ -605,8 +605,8 @@ class VariantsWindow:
                             end = min(a.size.width for a in ends)
 
                 items.append({"g": part.name, "f": ext, "s": start, "e": end})
-            tab.alist.set(items)
-            self.listEditCallback(tab.alist)
+            tab.aList.set(items)
+            self.listEditCallback(tab.aList)
             return
         except:
             _message(traceback.format_exc())
@@ -718,15 +718,15 @@ class ConstantsWindow:
             NSLocalizedString("Radicals", ""): MATH_CONSTANTS_RADICALS,
         }
 
-        uformatter = AppKit.NSNumberFormatter.new()
-        uformatter.setAllowsFloats_(False)
-        uformatter.setMinimum_(0)
-        uformatter.setMaximum_(0xFFFF)
+        uFormatter = AppKit.NSNumberFormatter.new()
+        uFormatter.setAllowsFloats_(False)
+        uFormatter.setMinimum_(0)
+        uFormatter.setMaximum_(0xFFFF)
 
-        sformatter = AppKit.NSNumberFormatter.new()
-        sformatter.setAllowsFloats_(False)
-        sformatter.setMinimum_(-0x7FFF)
-        sformatter.setMaximum_(0x7FFF)
+        sFormatter = AppKit.NSNumberFormatter.new()
+        sFormatter.setAllowsFloats_(False)
+        sFormatter.setMinimum_(-0x7FFF)
+        sFormatter.setMaximum_(0x7FFF)
 
         window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
         for i, name in enumerate(tabs.keys()):
@@ -741,7 +741,7 @@ class ConstantsWindow:
                     "auto",
                     constants.get(c, None),
                     callback=self.editTextCallback,
-                    formatter=uformatter if c in CONSTANT_UNSIGNED else sformatter,
+                    formatter=uFormatter if c in CONSTANT_UNSIGNED else sFormatter,
                     placeholder="0",
                 )
                 box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
@@ -813,8 +813,8 @@ class ConstantsWindow:
             # display "integral" height
             if (glyph := font.glyphs["∫"]) is not None:
                 if varData := glyph.userData[VARIANTS_ID]:
-                    if vvars := varData.get(V_VARIANTS_ID):
-                        value = vvars[1].glyph.layers[master.id].bounds.size.height
+                    if vVars := varData.get(V_VARIANTS_ID):
+                        value = vVars[1].glyph.layers[master.id].bounds.size.height
         elif constant == "MathLeading":
             if (value := master.customParameters["typoLineGap"]) is None:
                 value = master.customParameters["hheaLineGap"]
@@ -1148,7 +1148,7 @@ class MATHPlugin(GeneralPlugin):
                 self.drawAnchors(layer, TOP_ACCENT_ANCHOR, scale)
 
             if self.defaults[f"{PLUGIN_ID}.toggleShowMK:"]:
-                self.drawMathkern(layer, scale)
+                self.drawMathKern(layer, scale)
 
             showGV = self.defaults[f"{PLUGIN_ID}.toggleShowGV:"]
             showGA = self.defaults[f"{PLUGIN_ID}.toggleShowGA:"]
@@ -1201,22 +1201,22 @@ class MATHPlugin(GeneralPlugin):
         AppKit.NSColor.colorWithDeviceWhite_alpha_(0, 0.2).set()
         for name in SAMPLE_MATH_ACCENTS:
             if glyph := font.glyphs[name]:
-                alayer = glyph.layers[master.id]
-                aanchor = alayer.anchors[anchor.name]
-                if aanchor is None:
+                aLayer = glyph.layers[master.id]
+                aAnchor = aLayer.anchors[anchor.name]
+                if aAnchor is None:
                     continue
 
-                dx = anchor.position.x - aanchor.position.x
+                dx = anchor.position.x - aAnchor.position.x
                 Transform = AppKit.NSAffineTransform.alloc().init()
                 Transform.translateXBy_yBy_(dx, dy)
 
-                path = alayer.completeBezierPath
+                path = aLayer.completeBezierPath
                 path.transformUsingAffineTransform_(Transform)
                 path.fill()
         restore()
 
     @staticmethod
-    def drawMathkern(layer, width):
+    def drawMathKern(layer, width):
         save()
         master = layer.master
         constants = master.userData.get(CONSTANTS_ID, {})
@@ -1292,7 +1292,7 @@ class MATHPlugin(GeneralPlugin):
             restore()
             return
 
-        minoverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
+        minOverlap = layer.master.userData.get(CONSTANTS_ID, {}).get(
             "MinConnectorOverlap", 0
         )
 
@@ -1302,23 +1302,23 @@ class MATHPlugin(GeneralPlugin):
         if vertical:
             # Vertically center the assembly
             h = sum(gl(a[0]).layers[layer.layerId].bounds.size.height for a in assembly)
-            h -= (len(assembly) - 1) * minoverlap
+            h -= (len(assembly) - 1) * minOverlap
             d = layer.bounds.size.height - h
             y = layer.bounds.origin.y + d / 2
 
-        for gref, _, _, _ in assembly:
+        for gRef, _, _, _ in assembly:
             save()
             translate(x, y)
-            partLayer = gl(gref).layers[layer.layerId]
+            partLayer = gl(gRef).layers[layer.layerId]
             path = partLayer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
 
             w, h = _getMetrics(partLayer)
             if vertical:
-                y += h - minoverlap
+                y += h - minOverlap
             else:
-                x += w - minoverlap
+                x += w - minOverlap
             restore()
 
         # Then at the minimum size
@@ -1327,23 +1327,23 @@ class MATHPlugin(GeneralPlugin):
             x += partLayer.width
             h = 0
             prev = 0
-            for gref, _, start, end in assembly:
-                overlap = max(min(start, prev), minoverlap)
+            for gRef, _, start, end in assembly:
+                overlap = max(min(start, prev), minOverlap)
                 prev = end
-                partLayer = gl(gref).layers[layer.layerId]
+                partLayer = gl(gRef).layers[layer.layerId]
                 h += _getMetrics(partLayer)[1] - overlap
             d = layer.bounds.size.height - h
             y = layer.bounds.origin.y + d / 2
         else:
-            x += minoverlap * 2
+            x += minOverlap * 2
 
         prev = 0
-        for gref, _, start, end in assembly:
+        for gRef, _, start, end in assembly:
             save()
-            overlap = max(min(start, prev), minoverlap)
+            overlap = max(min(start, prev), minOverlap)
             prev = end
 
-            partLayer = gl(gref).layers[layer.layerId]
+            partLayer = gl(gRef).layers[layer.layerId]
             w, h = _getMetrics(partLayer)
             if vertical:
                 y -= overlap
@@ -1447,12 +1447,12 @@ class MATHPlugin(GeneralPlugin):
         if table.Version != 0x00010000:
             return
 
-        def get_glyph(gname):
-            if gname in font.glyphs:
-                return font.glyphs[gname]
+        def get_glyph(gName):
+            if gName in font.glyphs:
+                return font.glyphs[gName]
             glyphOrder = ttFont.getGlyphOrder()
-            if gname in glyphOrder:
-                return font.glyphs[glyphOrder.index(gname)]
+            if gName in glyphOrder:
+                return font.glyphs[glyphOrder.index(gName)]
             return None
 
         constants = {}
@@ -1487,9 +1487,9 @@ class MATHPlugin(GeneralPlugin):
                 for name in extended.glyphs:
                     get_glyph(name).userData[EXTENDED_SHAPE_ID] = True
 
-            if kerninfo := info.MathKernInfo:
+            if kernInfo := info.MathKernInfo:
                 for name, value in zip(
-                    kerninfo.MathKernCoverage.glyphs, kerninfo.MathKernInfoRecords
+                    kernInfo.MathKernCoverage.glyphs, kernInfo.MathKernInfoRecords
                 ):
                     layer = get_glyph(name).layers[master.id]
 
@@ -1498,18 +1498,18 @@ class MATHPlugin(GeneralPlugin):
                             table.MathConstants.SuperscriptBottomMaxWithSubscript
                         ]
                         for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
-                            aname = f"{KERN_TOP_RIGHT_ANCHOR}.{i}"
-                            layer.anchors[aname] = GSAnchor()
-                            layer.anchors[aname].position = (
+                            aName = f"{KERN_TOP_RIGHT_ANCHOR}.{i}"
+                            layer.anchors[aName] = GSAnchor()
+                            layer.anchors[aName].position = (
                                 x.Value + layer.width,
                                 y.Value,
                             )
                     if kern := value.BottomRightMathKern:
                         heights = [_valueRecord(0)] + kern.CorrectionHeight
                         for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
-                            aname = f"{KERN_BOTTOM_RIGHT_ANCHOR}.{i}"
-                            layer.anchors[aname] = GSAnchor()
-                            layer.anchors[aname].position = (
+                            aName = f"{KERN_BOTTOM_RIGHT_ANCHOR}.{i}"
+                            layer.anchors[aName] = GSAnchor()
+                            layer.anchors[aName].position = (
                                 x.Value + layer.width,
                                 y.Value,
                             )
@@ -1519,23 +1519,23 @@ class MATHPlugin(GeneralPlugin):
                             table.MathConstants.SuperscriptBottomMaxWithSubscript
                         ]
                         for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
-                            aname = f"{KERN_TOP_LEFT_ANCHOR}.{i}"
-                            layer.anchors[aname] = GSAnchor()
-                            layer.anchors[aname].position = (-x.Value, y.Value)
+                            aName = f"{KERN_TOP_LEFT_ANCHOR}.{i}"
+                            layer.anchors[aName] = GSAnchor()
+                            layer.anchors[aName].position = (-x.Value, y.Value)
 
                     if kern := value.BottomLeftMathKern:
                         heights = [_valueRecord(0)] + kern.CorrectionHeight
                         for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
-                            aname = f"{KERN_BOTTOM_LEFT_ANCHOR}.{i}"
-                            layer.anchors[aname] = GSAnchor()
-                            layer.anchors[aname].position = (-x.Value, y.Value)
+                            aName = f"{KERN_BOTTOM_LEFT_ANCHOR}.{i}"
+                            layer.anchors[aName] = GSAnchor()
+                            layer.anchors[aName].position = (-x.Value, y.Value)
 
         if variants := table.MathVariants:
             constants["MinConnectorOverlap"] = variants.MinConnectorOverlap
 
-            if vvariants := variants.VertGlyphCoverage:
+            if vVariants := variants.VertGlyphCoverage:
                 for name, value in zip(
-                    vvariants.glyphs, variants.VertGlyphConstruction
+                    vVariants.glyphs, variants.VertGlyphConstruction
                 ):
                     glyph = get_glyph(name)
                     varData = glyph.userData.get(VARIANTS_ID, {})
@@ -1566,9 +1566,9 @@ class MATHPlugin(GeneralPlugin):
                             )
                     layer.userData[VARIANTS_ID] = dict(varData)
 
-            if hvariants := variants.HorizGlyphCoverage:
+            if hVariants := variants.HorizGlyphCoverage:
                 for name, value in zip(
-                    hvariants.glyphs, variants.HorizGlyphConstruction
+                    hVariants.glyphs, variants.HorizGlyphConstruction
                 ):
                     glyph = get_glyph(name)
                     varData = glyph.userData.get(VARIANTS_ID, {})
@@ -1656,14 +1656,14 @@ class MATHPlugin(GeneralPlugin):
                 elif anchor.name == TOP_ACCENT_ANCHOR:
                     accent[name] = _valueRecord(anchor.position.x)
                 else:
-                    for aname in (
+                    for aName in (
                         KERN_TOP_RIGHT_ANCHOR,
                         KERN_TOP_LEFT_ANCHOR,
                         KERN_BOTTOM_RIGHT_ANCHOR,
                         KERN_BOTTOM_LEFT_ANCHOR,
                     ):
-                        if anchor.name.startswith(aname):
-                            ext = aname.split(".")[1]
+                        if anchor.name.startswith(aName):
+                            ext = aName.split(".")[1]
                             pt = anchor.position
                             if ext.endswith("r"):
                                 pt.x -= layer.width
@@ -1673,41 +1673,41 @@ class MATHPlugin(GeneralPlugin):
             if glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
 
-        vvariants = {}
-        hvariants = {}
-        vassemblies = {}
-        hassemblies = {}
+        vVariants = {}
+        hVariants = {}
+        vAssemblies = {}
+        hAssemblies = {}
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
-            if vvars := varData.get(V_VARIANTS_ID):
-                vvariants[name] = vvars
-            if hvars := varData.get(H_VARIANTS_ID):
-                hvariants[name] = hvars
+            if vVars := varData.get(V_VARIANTS_ID):
+                vVariants[name] = vVars
+            if hVars := varData.get(H_VARIANTS_ID):
+                hVariants[name] = hVars
 
             layer = glyph.layers[master.id]
             varData = layer.userData.get(VARIANTS_ID, {})
-            if vassembly := varData.get(V_ASSEMBLY_ID):
-                vassemblies[name] = vassembly[:]
+            if vAssembly := varData.get(V_ASSEMBLY_ID):
+                vAssemblies[name] = vAssembly[:]
                 # Last part has italic correction, use it for the assembly.
-                if ic := italic.get(str(vassemblies[name][-1][0])):
-                    del italic[str(vassemblies[name][-1][0])]
-                    vassemblies[name][0] = list(vassemblies[name][0]) + [ic]
-            if hassembly := varData.get(H_ASSEMBLY_ID):
-                hassemblies[name] = hassembly[:]
-                if ic := italic.get(str(hassemblies[name][-1][0])):
-                    del italic[str(hassemblies[name][-1][0])]
-                    hassemblies[name][0] = list(hassemblies[name][0]) + [ic]
+                if ic := italic.get(str(vAssemblies[name][-1][0])):
+                    del italic[str(vAssemblies[name][-1][0])]
+                    vAssemblies[name][0] = list(vAssemblies[name][0]) + [ic]
+            if hAssembly := varData.get(H_ASSEMBLY_ID):
+                hAssemblies[name] = hAssembly[:]
+                if ic := italic.get(str(hAssemblies[name][-1][0])):
+                    del italic[str(hAssemblies[name][-1][0])]
+                    hAssemblies[name][0] = list(hAssemblies[name][0]) + [ic]
 
         if not any(
             [
                 constants,
                 italic,
                 accent,
-                vvariants,
-                hvariants,
-                vassemblies,
-                hassemblies,
+                vVariants,
+                hVariants,
+                vAssemblies,
+                hAssemblies,
                 kerning,
                 extended,
             ]
@@ -1772,14 +1772,14 @@ class MATHPlugin(GeneralPlugin):
         if extended:
             info.ExtendedShapeCoverage = otl.buildCoverage(extended, glyphMap)
 
-        if any([vvariants, hvariants, vassemblies, hassemblies]):
+        if any([vVariants, hVariants, vAssemblies, hAssemblies]):
             table.MathVariants = otTables.MathVariants()
             overlap = constantData.get("MinConnectorOverlap", 0)
             table.MathVariants.MinConnectorOverlap = overlap
 
         for vertical, variants, assemblies in (
-            (True, vvariants, vassemblies),
-            (False, hvariants, hassemblies),
+            (True, vVariants, vAssemblies),
+            (False, hVariants, hAssemblies),
         ):
             if not variants and not assemblies:
                 continue
@@ -1834,8 +1834,8 @@ class MATHPlugin(GeneralPlugin):
     ):
         # Interpolate start and end connector lengths of assemblies
         if varData := layer.userData.get(VARIANTS_ID, {}):
-            if hassembly := varData.get(H_ASSEMBLY_ID):
-                for i, _ in enumerate(hassembly):
+            if hAssembly := varData.get(H_ASSEMBLY_ID):
+                for i, _ in enumerate(hAssembly):
                     start = 0
                     end = 0
                     for masterId, factor in interpolation.items():
@@ -1847,9 +1847,9 @@ class MATHPlugin(GeneralPlugin):
                         if i < len(masterAssembly):
                             start += masterAssembly[i][2] * factor
                             end += masterAssembly[i][3] * factor
-                    hassembly[i] = (hassembly[i][0], hassembly[i][1], start, end)
-            if vassembly := varData.get(V_ASSEMBLY_ID):
-                for i, _ in enumerate(vassembly):
+                    hAssembly[i] = (hAssembly[i][0], hAssembly[i][1], start, end)
+            if vAssembly := varData.get(V_ASSEMBLY_ID):
+                for i, _ in enumerate(vAssembly):
                     start = 0
                     end = 0
                     for masterId, factor in interpolation.items():
@@ -1861,7 +1861,7 @@ class MATHPlugin(GeneralPlugin):
                         if i < len(masterAssembly):
                             start += masterAssembly[i][2] * factor
                             end += masterAssembly[i][3] * factor
-                    vassembly[i] = (vassembly[i][0], vassembly[i][1], start, end)
+                    vAssembly[i] = (vAssembly[i][0], vAssembly[i][1], start, end)
         return (True, None)
 
     @objc.typedSelector(b"c32@:@@@o^@")
