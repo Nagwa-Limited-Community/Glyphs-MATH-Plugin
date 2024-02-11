@@ -1687,6 +1687,8 @@ class MATHPlugin(GeneralPlugin):
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vVars := varData.get(V_VARIANTS_ID):
                 vVariants[name] = vVars
+                if isExtended:
+                    extended.update(str(v) for v in vVars)
             if hVars := varData.get(H_VARIANTS_ID):
                 hVariants[name] = hVars
 
