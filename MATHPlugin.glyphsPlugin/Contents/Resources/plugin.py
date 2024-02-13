@@ -1659,14 +1659,9 @@ class MATHPlugin(GeneralPlugin):
         accent = {}
         kerning = {}
         extended = set()
-        vVariants = {}
-        hVariants = {}
-        vAssemblies = {}
-        hAssemblies = {}
-
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
-            layer = glyph.layers[master.id]
+            layer = glyph.layers[0]
             for anchor in layer.anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
                     italic[name] = _valueRecord(anchor.position.x - layer.width)
@@ -1687,19 +1682,24 @@ class MATHPlugin(GeneralPlugin):
                             elif ext.endswith("l"):
                                 pt.x = -pt.x
                             kerning.setdefault(name, {}).setdefault(ext, []).append(pt)
-
-            isExtended = glyph.userData[EXTENDED_SHAPE_ID]
-            if isExtended:
+            if glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
 
+        vVariants = {}
+        hVariants = {}
+        vAssemblies = {}
+        hAssemblies = {}
+        for glyph in font.glyphs:
+            name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vVars := varData.get(V_VARIANTS_ID):
                 vVariants[name] = vVars
-                if isExtended:
+                if glyph.userData[EXTENDED_SHAPE_ID]:
                     extended.update(str(v) for v in vVars)
             if hVars := varData.get(H_VARIANTS_ID):
                 hVariants[name] = hVars
 
+            layer = glyph.layers[master.id]
             varData = layer.userData.get(VARIANTS_ID, {})
             if vAssembly := varData.get(V_ASSEMBLY_ID):
                 vAssemblies[name] = vAssembly[:]
