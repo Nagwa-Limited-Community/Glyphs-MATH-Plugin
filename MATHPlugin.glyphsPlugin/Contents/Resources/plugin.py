@@ -23,6 +23,7 @@ from GlyphsApp import (
     GSGlyphReference,
     Message,
     GSCallbackHandler,
+    GSMetricsTypexHeight,
 )
 from GlyphsApp.drawingTools import restore, save, translate
 from GlyphsApp.plugins import GeneralPlugin
@@ -862,7 +863,15 @@ class ConstantsWindow:
                 bounds = glyph.layers[master.id].bounds
                 value = bounds.origin.y + bounds.size.height / 2
         elif constant == "AccentBaseHeight":
-            value = master.xHeight
+            for metric in master.metrics():
+                if (
+                    metric.metric.type == GSMetricsTypexHeight
+                    and metric.metric.filter is None
+                ):
+                    value = metric.position + metric.overshoot
+                    break
+            if not value:
+                value = master.xHeight
         elif constant == "FlattenedAccentBaseHeight":
             value = master.capHeight
         elif constant == "SubscriptShiftDown":
