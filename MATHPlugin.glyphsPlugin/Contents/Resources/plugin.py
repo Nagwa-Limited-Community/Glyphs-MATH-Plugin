@@ -863,12 +863,10 @@ class ConstantsWindow:
                 bounds = glyph.layers[master.id].bounds
                 value = bounds.origin.y + bounds.size.height / 2
         elif constant == "AccentBaseHeight":
-            for metric in master.metrics():
-                if (
-                    metric.metric.type == GSMetricsTypexHeight
-                    and metric.metric.filter is None
-                ):
-                    value = metric.position + metric.overshoot
+            for metric in font.metrics:
+                if metric.type == GSMetricsTypexHeight and metric.filter is None:
+                    metricValue = master.metricValues[metric.id]
+                    value = metricValue.position + metricValue.overshoot
                     break
             if not value:
                 value = master.xHeight
