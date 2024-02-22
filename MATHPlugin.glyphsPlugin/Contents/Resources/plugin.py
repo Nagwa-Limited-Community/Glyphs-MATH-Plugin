@@ -6,6 +6,8 @@ import objc
 import vanilla
 import AppKit
 
+from functools import cached_property
+
 from fontTools.otlLib import builder as otl
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import otTables
@@ -803,6 +805,34 @@ class ConstantsWindow:
     def open(self):
         self.window.open()
 
+    @cached_property
+    def defaultRuleThickness(self):
+        master = self.master
+        font = master.font
+
+        value = None
+
+        # "minus" thickness
+        if glyph := font.glyphs["−"]:
+            value = value = glyph.layers[master.id].bounds.size.height
+
+        # "underscore" thickness
+        if not value and (glyph := font.glyphs["_"]):
+            value = glyph.layers[master.id].bounds.size.height
+
+        # "overline" thickness
+        if not value and (glyph := font.glyphs["\u0305"]):
+            value = glyph.layers[master.id].bounds.size.height
+
+        if not value:
+            value = master.customParameters["yStrikeoutSize"]
+        return value
+
+    def ruleThickness(self):
+        if rule := self.getConstant("FractionRuleThickness"):
+            return rule
+        return self.defaultRuleThickness
+
     def getConstant(self, constant, force=False):
         master = self.master
         font = master.font
@@ -853,14 +883,14 @@ class ConstantsWindow:
             if (v := self.getConstant("SuperscriptShiftUp")) is not None:
                 value = master.capHeight - v
         elif constant == "SubSuperscriptGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 4
         elif constant == "SuperscriptBottomMaxWithSubscript":
             value = master.xHeight * 4 / 5
         elif constant == "SpaceAfterScript":
             value = font.upm / 24
         elif constant == "UpperLimitGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 2
         elif constant == "UpperLimitBaselineRiseMin":
             value = -master.descender * 3 / 4
@@ -877,10 +907,10 @@ class ConstantsWindow:
         elif constant == "StackBottomDisplayStyleShiftDown":
             value = master.capHeight
         elif constant == "StackGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 3
         elif constant == "StackDisplayStyleGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 7
         elif constant == "StretchStackTopShiftUp":
             value = self.getConstant("UpperLimitBaselineRiseMin")
@@ -899,26 +929,16 @@ class ConstantsWindow:
         elif constant == "FractionDenominatorDisplayStyleShiftDown":
             value = self.getConstant("StackBottomDisplayStyleShiftDown")
         elif constant == "FractionNumeratorGapMin":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "FractionNumDisplayStyleGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 3
         elif constant == "FractionRuleThickness":
-            # "radical" top connecting part
-            if (glyph := master.font.glyphs["√"]) is not None:
-                layer = glyph.layers[master.id]
-                paths = layer.paths
-                if len(paths):
-                    segments = list(
-                        reversed(
-                            sorted(paths[0].segments, key=lambda s: s.bounds.origin.x)
-                        )
-                    )
-                    value = segments[0].bounds.size.height
+            value = self.defaultRuleThickness
         elif constant == "FractionDenominatorGapMin":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "FractionDenomDisplayStyleGapMin":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 3
         elif constant == "SkewedFractionHorizontalGap":
             # TODO
@@ -927,27 +947,27 @@ class ConstantsWindow:
             # TODO
             pass
         elif constant == "OverbarVerticalGap":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 3
         elif constant == "OverbarRuleThickness":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "OverbarExtraAscender":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "UnderbarVerticalGap":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 3
         elif constant == "UnderbarRuleThickness":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "UnderbarExtraDescender":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "RadicalVerticalGap":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule * 5 / 4
         elif constant == "RadicalDisplayStyleVerticalGap":
-            if (rule := self.getConstant("FractionRuleThickness")) is not None:
+            if rule := self.ruleThickness:
                 value = rule + master.xHeight / 4
         elif constant == "RadicalRuleThickness":
-            value = self.getConstant("FractionRuleThickness")
+            value = self.ruleThickness
         elif constant == "RadicalExtraAscender":
             if (value := self.getConstant("RadicalRuleThickness")) is None:
                 value = self.getConstant("FractionRuleThickness")
