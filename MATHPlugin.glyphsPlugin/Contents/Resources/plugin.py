@@ -467,38 +467,43 @@ class VariantsWindow:
         font = glyph.parent
         name = glyph.name
 
-        if (ext := font.glyphs[name + ".ext"]) is None:
-            return
+        for l, r, t, b, m, e in [
+            ["lft", "rgt", "top", "bot", "mid", "ext"],
+            ["left", "right", "top", "bottom", "middle", "extension"],
+            ["l", "r", "t", "b", "m", "x"],
+        ]:
+            if (ext := font.glyphs[f"{name}.{e}"]) is None:
+                continue
 
-        mid = font.glyphs[name + ".mid"]
-        if vertical:
-            top = font.glyphs[name + ".top"]
-            bot = font.glyphs[name + ".bot"]
-            if not top and not bot:
-                return
-            if bot and not top:
-                parts = [bot, ext]
-            elif top and not bot:
-                parts = [ext, top]
-            elif mid:
-                parts = [bot, ext, mid, ext, top]
+            mid = font.glyphs[f"{name}.{m}"]
+            if vertical:
+                top = font.glyphs[f"{name}.{t}"]
+                bot = font.glyphs[f"{name}.{b}"]
+                if not top and not bot:
+                    continue
+                if bot and not top:
+                    parts = [bot, ext]
+                elif top and not bot:
+                    parts = [ext, top]
+                elif mid:
+                    parts = [bot, ext, mid, ext, top]
+                else:
+                    parts = [bot, ext, top]
             else:
-                parts = [bot, ext, top]
-        else:
-            lft = font.glyphs[name + ".lft"]
-            rgt = font.glyphs[name + ".rgt"]
-            if not lft and not rgt:
-                return
-            if lft and not rgt:
-                parts = [lft, ext]
-            elif rgt and not lft:
-                parts = [ext, rgt]
-            elif mid:
-                parts = [lft, ext, mid, ext, rgt]
-            else:
-                parts = [lft, ext, rgt]
+                lft = font.glyphs[f"{name}.{l}"]
+                rgt = font.glyphs[f"{name}.{r}"]
+                if not lft and not rgt:
+                    continue
+                if lft and not rgt:
+                    parts = [lft, ext]
+                elif rgt and not lft:
+                    parts = [ext, rgt]
+                elif mid:
+                    parts = [lft, ext, mid, ext, rgt]
+                else:
+                    parts = [lft, ext, rgt]
 
-        return parts
+            return parts
 
     def guessAssemblyCallback(self, sender):
         try:
