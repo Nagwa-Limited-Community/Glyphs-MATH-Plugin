@@ -895,14 +895,14 @@ class ConstantsWindow:
             if (v := self.getConstant("SuperscriptShiftUp")) is not None:
                 value = master.capHeight - v
         elif constant == "SubSuperscriptGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 4
         elif constant == "SuperscriptBottomMaxWithSubscript":
             value = master.xHeight * 4 / 5
         elif constant == "SpaceAfterScript":
             value = font.upm / 24
         elif constant == "UpperLimitGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 2
         elif constant == "UpperLimitBaselineRiseMin":
             value = -master.descender * 3 / 4
@@ -919,10 +919,10 @@ class ConstantsWindow:
         elif constant == "StackBottomDisplayStyleShiftDown":
             value = master.capHeight
         elif constant == "StackGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 3
         elif constant == "StackDisplayStyleGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 7
         elif constant == "StretchStackTopShiftUp":
             value = self.getConstant("UpperLimitBaselineRiseMin")
@@ -941,16 +941,16 @@ class ConstantsWindow:
         elif constant == "FractionDenominatorDisplayStyleShiftDown":
             value = self.getConstant("StackBottomDisplayStyleShiftDown")
         elif constant == "FractionNumeratorGapMin":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "FractionNumDisplayStyleGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 3
         elif constant == "FractionRuleThickness":
             value = self.defaultRuleThickness
         elif constant == "FractionDenominatorGapMin":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "FractionDenomDisplayStyleGapMin":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 3
         elif constant == "SkewedFractionHorizontalGap":
             # TODO
@@ -959,27 +959,27 @@ class ConstantsWindow:
             # TODO
             pass
         elif constant == "OverbarVerticalGap":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 3
         elif constant == "OverbarRuleThickness":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "OverbarExtraAscender":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "UnderbarVerticalGap":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 3
         elif constant == "UnderbarRuleThickness":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "UnderbarExtraDescender":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "RadicalVerticalGap":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule * 5 / 4
         elif constant == "RadicalDisplayStyleVerticalGap":
-            if rule := self.ruleThickness:
+            if rule := self.ruleThickness():
                 value = rule + master.xHeight / 4
         elif constant == "RadicalRuleThickness":
-            value = self.ruleThickness
+            value = self.ruleThickness()
         elif constant == "RadicalExtraAscender":
             if (value := self.getConstant("RadicalRuleThickness")) is None:
                 value = self.getConstant("FractionRuleThickness")
