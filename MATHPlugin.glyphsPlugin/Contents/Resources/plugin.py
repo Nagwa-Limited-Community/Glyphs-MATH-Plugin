@@ -1802,6 +1802,7 @@ class MATHPlugin(GeneralPlugin):
                 for side in ("tr", "tl", "br", "bl"):
                     if pts := kerning[glyph].get(side):
                         kern = otTables.MathKern()
+                        pts = sorted(pts, key=lambda pt: pt.y)
                         kern.HeightCount = len(pts) - 1
                         kern.CorrectionHeight = [_valueRecord(pt.y) for pt in pts[:-1]]
                         kern.KernValue = [_valueRecord(pt.x) for pt in pts]
