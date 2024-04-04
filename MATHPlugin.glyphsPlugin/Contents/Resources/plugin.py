@@ -1423,7 +1423,7 @@ class MATHPlugin(GeneralPlugin):
                     recalcBBoxes=False,
                 )
             except Exception as ex:
-                print(ex)
+                pass
             else:
                 try:
                     self.importMathTable(font, ttFont)
