@@ -8,9 +8,7 @@ import AppKit
 
 from functools import cached_property
 
-from fontTools.otlLib import builder as otl
-from fontTools.ttLib import TTFont, newTable
-from fontTools.ttLib.tables import otTables
+from fontTools.ttLib import TTFont
 from GlyphsApp import (
     DOCUMENTEXPORTED,
     DOCUMENTOPENED,
@@ -230,10 +228,12 @@ def _getMetrics(layer):
     return size.width, size.height
 
 
-def _valueRecord(v):
-    vr = otTables.MathValueRecord()
-    vr.Value = int(v)
-    return vr
+def _bboxWidth(layer):
+    return layer.bounds.size.width
+
+
+def _bboxHeight(layer):
+    return layer.bounds.size.height
 
 
 def _message(message):
@@ -1357,9 +1357,9 @@ class MATHPlugin(GeneralPlugin):
 
             w, h = _getMetrics(partLayer)
             if vertical:
-                y += h - minOverlap
+                y += _bboxHeight(partLayer) - minOverlap
             else:
-                x += w - minOverlap
+                x += _bboxWidth(partLayer) - minOverlap
             restore()
 
         # Then at the minimum size
@@ -1372,7 +1372,7 @@ class MATHPlugin(GeneralPlugin):
                 overlap = max(min(start, prev), minOverlap)
                 prev = end
                 partLayer = gl(gRef).layers[layer.layerId]
-                h += _getMetrics(partLayer)[1] - overlap
+                h += _bboxHeight(partLayer) - overlap
             d = layer.bounds.size.height - h
             y = layer.bounds.origin.y + d / 2
         else:
@@ -1479,6 +1479,8 @@ class MATHPlugin(GeneralPlugin):
     def importMathTable(font, ttFont):
         if "MATH" not in ttFont:
             return
+
+        from fontTools.ttLib.tables import otTables
 
         master = font.masters[0]
         userData = master.userData
@@ -1664,11 +1666,8 @@ class MATHPlugin(GeneralPlugin):
         instance = font.instances[0]
         master = font.masters[0]
 
-        constantData = master.userData.get(CONSTANTS_ID, {})
-        # MinConnectorOverlap is used in MathVariants table below.
-        constants = {
-            c: v for c, v in constantData.items() if c != "MinConnectorOverlap" and v
-        }
+        constants = dict(master.userData.get(CONSTANTS_ID, {}))
+        min_connector_overlap = constants.pop("MinConnectorOverlap", 0)
 
         if (
             font.customParameters["Don't use Production Names"]
@@ -1682,29 +1681,38 @@ class MATHPlugin(GeneralPlugin):
         accent = {}
         kerning = {}
         extended = set()
+        kerning_sides = {
+            KERN_TOP_RIGHT_ANCHOR: "TopRight",
+            KERN_TOP_LEFT_ANCHOR: "TopLeft",
+            KERN_BOTTOM_RIGHT_ANCHOR: "BottomRight",
+            KERN_BOTTOM_LEFT_ANCHOR: "BottomLeft",
+        }
         for glyph in font.glyphs:
             name = productionMap[glyph.name]
             layer = glyph.layers[0]
+            kerns = {}
             for anchor in layer.anchors:
                 if anchor.name == ITALIC_CORRECTION_ANCHOR:
-                    italic[name] = _valueRecord(anchor.position.x - layer.width)
+                    italic[name] = anchor.position.x - layer.width
                 elif anchor.name == TOP_ACCENT_ANCHOR:
-                    accent[name] = _valueRecord(anchor.position.x)
+                    accent[name] = anchor.position.x
                 else:
-                    for aName in (
-                        KERN_TOP_RIGHT_ANCHOR,
-                        KERN_TOP_LEFT_ANCHOR,
-                        KERN_BOTTOM_RIGHT_ANCHOR,
-                        KERN_BOTTOM_LEFT_ANCHOR,
-                    ):
+                    for aName in kerning_sides.keys():
                         if anchor.name.startswith(aName):
-                            ext = aName.split(".")[1]
+                            side = kerning_sides[aName]
                             pt = anchor.position
-                            if ext.endswith("r"):
+                            if side.endswith("Right"):
                                 pt.x -= layer.width
-                            elif ext.endswith("l"):
+                            elif side.endswith("Left"):
                                 pt.x = -pt.x
-                            kerning.setdefault(name, {}).setdefault(ext, []).append(pt)
+                            kerns.setdefault(side, []).append(pt)
+            if kerns:
+                kerning[name] = {}
+                for side, pts in kerns.items():
+                    pts = sorted(pts, key=lambda pt: pt.y)
+                    correctionHeights = [pt.y for pt in pts[:-1]]
+                    kernValues = [pt.x for pt in pts]
+                    kerning[name][side] = (correctionHeights, kernValues)
             if glyph.userData[EXTENDED_SHAPE_ID]:
                 extended.add(name)
 
@@ -1716,25 +1724,36 @@ class MATHPlugin(GeneralPlugin):
             name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vVars := varData.get(V_VARIANTS_ID):
-                vVariants[name] = vVars
+                vVars = [str(n) for n in vVars]
+                vVariants[name] = [
+                    (n, _bboxHeight(font.glyphs[n].layers[0])) for n in vVars
+                ]
                 if glyph.userData[EXTENDED_SHAPE_ID]:
                     extended.update(str(v) for v in vVars)
             if hVars := varData.get(H_VARIANTS_ID):
-                hVariants[name] = hVars
+                hVars = [str(n) for n in hVars]
+                hVariants[name] = [
+                    (n, _bboxWidth(font.glyphs[n].layers[0])) for n in hVars
+                ]
 
             layer = glyph.layers[master.id]
             varData = layer.userData.get(VARIANTS_ID, {})
             if vAssembly := varData.get(V_ASSEMBLY_ID):
-                vAssemblies[name] = vAssembly[:]
-                # Last part has italic correction, use it for the assembly.
-                if ic := italic.get(str(vAssemblies[name][-1][0])):
-                    del italic[str(vAssemblies[name][-1][0])]
-                    vAssemblies[name][0] = list(vAssemblies[name][0]) + [ic]
+                vAssemblies[name] = [
+                    [
+                        (str(part[0]), *part[1:], _bboxHeight(part[0].glyph.layers[0]))
+                        for part in vAssembly
+                    ],
+                    italic.pop(str(vAssembly[-1][0]), 0),
+                ]
             if hAssembly := varData.get(H_ASSEMBLY_ID):
-                hAssemblies[name] = hAssembly[:]
-                if ic := italic.get(str(hAssemblies[name][-1][0])):
-                    del italic[str(hAssemblies[name][-1][0])]
-                    hAssemblies[name][0] = list(hAssemblies[name][0]) + [ic]
+                hAssemblies[name] = [
+                    [
+                        (str(part[0]), *part[1:], _bboxWidth(part[0].glyph.layers[0]))
+                        for part in hAssembly
+                    ],
+                    italic.pop(str(hAssembly[-1][0]), 0),
+                ]
 
         if not any(
             [
@@ -1751,120 +1770,21 @@ class MATHPlugin(GeneralPlugin):
         ):
             return
 
-        ttFont["MATH"] = newTable("MATH")
-        ttFont["MATH"].table = table = otTables.MATH()
+        from fontTools.otlLib.builder import buildMathTable
 
-        table.Version = 0x00010000
-
-        if constants:
-            table.MathConstants = otTables.MathConstants()
-            for c in MATH_CONSTANTS:
-                v = constants.get(c, 0)
-                if c not in CONSTANT_INTEGERS:
-                    v = _valueRecord(v)
-                setattr(table.MathConstants, c, v)
-
-        glyphOrder = ttFont.getGlyphOrder()
-        glyphMap = {n: i for i, n in enumerate(glyphOrder)}
-
-        if italic or accent or extended:
-            info = table.MathGlyphInfo = otTables.MathGlyphInfo()
-            info.populateDefaults()
-
-        if italic:
-            coverage = otl.buildCoverage(italic.keys(), glyphMap)
-            ic = info.MathItalicsCorrectionInfo = otTables.MathItalicsCorrectionInfo()
-            ic.Coverage = coverage
-            ic.ItalicsCorrection = [italic[n] for n in coverage.glyphs]
-
-        if accent:
-            coverage = otl.buildCoverage(accent.keys(), glyphMap)
-            ta = info.MathTopAccentAttachment = otTables.MathTopAccentAttachment()
-            ta.TopAccentCoverage = coverage
-            ta.TopAccentAttachment = [accent[n] for n in coverage.glyphs]
-
-        if kerning:
-            coverage = otl.buildCoverage(kerning.keys(), glyphMap)
-            ki = info.MathKernInfo = otTables.MathKernInfo()
-            ki.MathKernCoverage = coverage
-            ki.MathKernInfoRecords = records = []
-            for glyph in coverage.glyphs:
-                record = otTables.MathKernInfoRecord()
-                for side in ("tr", "tl", "br", "bl"):
-                    if pts := kerning[glyph].get(side):
-                        kern = otTables.MathKern()
-                        pts = sorted(pts, key=lambda pt: pt.y)
-                        kern.HeightCount = len(pts) - 1
-                        kern.CorrectionHeight = [_valueRecord(pt.y) for pt in pts[:-1]]
-                        kern.KernValue = [_valueRecord(pt.x) for pt in pts]
-                        if side == "tr":
-                            record.TopRightMathKern = kern
-                        elif side == "tl":
-                            record.TopLeftMathKern = kern
-                        if side == "br":
-                            record.BottomRightMathKern = kern
-                        elif side == "bl":
-                            record.BottomLeftMathKern = kern
-                records.append(record)
-
-        if extended:
-            info.ExtendedShapeCoverage = otl.buildCoverage(extended, glyphMap)
-
-        if any([vVariants, hVariants, vAssemblies, hAssemblies]):
-            table.MathVariants = otTables.MathVariants()
-            overlap = constantData.get("MinConnectorOverlap", 0)
-            table.MathVariants.MinConnectorOverlap = overlap
-
-        for vertical, variants, assemblies in (
-            (True, vVariants, vAssemblies),
-            (False, hVariants, hAssemblies),
-        ):
-            if not variants and not assemblies:
-                continue
-            coverage = list(variants.keys()) + list(assemblies.keys())
-            coverage = otl.buildCoverage(coverage, glyphMap)
-            constructions = []
-            for glyph in coverage.glyphs:
-                construction = None
-                if glyph in variants:
-                    names = [str(g) for g in variants[glyph]]
-                    construction = otTables.MathGlyphConstruction()
-                    construction.populateDefaults()
-                    construction.VariantCount = len(names)
-                    construction.MathGlyphVariantRecord = records = []
-                    for name in names:
-                        width, height = _getMetrics(font.glyphs[name].layers[0])
-                        record = otTables.MathGlyphVariantRecord()
-                        record.VariantGlyph = productionMap[name]
-                        record.AdvanceMeasurement = int(height if vertical else width)
-                        records.append(record)
-                if glyph in assemblies:
-                    if construction is None:
-                        construction = otTables.MathGlyphConstruction()
-                        construction.populateDefaults()
-                    assembly = construction.GlyphAssembly = otTables.GlyphAssembly()
-                    assembly.ItalicsCorrection = _valueRecord(0)
-                    assembly.PartRecords = records = []
-                    for part in assemblies[glyph]:
-                        if len(part) > 4:
-                            assembly.ItalicsCorrection = part[4]
-                        partGlyph = font.glyphs[str(part[0])]
-                        width, height = _getMetrics(partGlyph.layers[0])
-                        record = otTables.GlyphPartRecord()
-                        record.glyph = productionMap[str(part[0])]
-                        record.PartFlags = int(part[1])
-                        record.StartConnectorLength = int(part[2])
-                        record.EndConnectorLength = int(part[3])
-                        record.FullAdvance = int(height if vertical else width)
-                        records.append(record)
-                constructions.append(construction)
-
-            if vertical:
-                table.MathVariants.VertGlyphCoverage = coverage
-                table.MathVariants.VertGlyphConstruction = constructions
-            else:
-                table.MathVariants.HorizGlyphCoverage = coverage
-                table.MathVariants.HorizGlyphConstruction = constructions
+        buildMathTable(
+            ttFont,
+            constants=constants,
+            italicsCorrections=italic,
+            topAccentAttachments=accent,
+            extendedShapes=extended,
+            mathKerns=kerning,
+            minConnectorOverlap=min_connector_overlap,
+            vertGlyphVariants=vVariants,
+            horizGlyphVariants=hVariants,
+            vertGlyphAssembly=vAssemblies,
+            horizGlyphAssembly=hAssemblies,
+        )
 
     @objc.typedSelector(b"c32@:@@@o^@")
     def interpolateLayer_glyph_interpolation_error_(
