@@ -226,11 +226,8 @@ SAMPLE_MATH_ACCENTS = [
 
 
 def _getMetrics(layer):
-    width = layer.width
-    height = layer.vertWidth
-    if height is None:
-        height = layer.bounds.size.height
-    return (width, height)
+    size = layer.bounds.size
+    return size.width, size.height
 
 
 def _valueRecord(v):
