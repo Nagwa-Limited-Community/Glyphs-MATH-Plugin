@@ -1031,8 +1031,8 @@ def dashedLine(pt1, pt2, width):
     path = AppKit.NSBezierPath.bezierPath()
     path.setLineWidth_(width)
     path.setLineDash_count_phase_((width * 2, width * 2), 2, 0)
-    path.moveToPoint_((pt1.x, pt1.y))
-    path.lineToPoint_((pt2.x, pt2.y))
+    path.moveToPoint_(pt1)
+    path.lineToPoint_(pt2)
     path.stroke()
 
 
@@ -1294,14 +1294,14 @@ class MATHPlugin(GeneralPlugin):
             for i, pt in enumerate(points):
                 if i == 0:
                     y = min(bounds.origin.y, master.descender)
-                    dashedLine(pt, AppKit.NSPoint(pt.x, y), width * 2)
-                    line.moveToPoint_((pt.x, pt.y))
-                line.lineToPoint_((pt.x, pt.y))
+                    dashedLine((pt.x, y), pt, width * 2)
+                    line.moveToPoint_(pt)
                 if i < len(points) - 1:
+                    line.lineToPoint_(pt)
                     line.lineToPoint_((points[i + 1].x, pt.y))
                 else:
-                    y = max(bounds.origin.y + bounds.size.height, master.descender)
-                    dashedLine(pt, AppKit.NSPoint(pt.x, y), width * 2)
+                    y = max(bounds.origin.y + bounds.size.height, master.ascender)
+                    dashedLine((pt.x, points[i - 1].y), (pt.x, y), width * 2)
             line.stroke()
         restore()
 
@@ -1537,42 +1537,36 @@ class MATHPlugin(GeneralPlugin):
                 ):
                     layer = get_glyph(name).layers[master.id]
 
+                    def _kern_to_xy(kern, top):
+                        heights = [h.Value for h in kern.CorrectionHeight]
+                        last = master.ascender
+                        if heights and heights[-1] >= master.ascender:
+                            last = heights[-1] + 100
+                        elif not heights:
+                            last = master.ascender if top else master.descender
+                        heights.append(last)
+                        values = [k.Value for k in kern.KernValue]
+                        return zip(values, heights)
+
                     if kern := value.TopRightMathKern:
-                        heights = kern.CorrectionHeight + [
-                            table.MathConstants.SuperscriptBottomMaxWithSubscript
-                        ]
-                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                        for i, (x, y) in enumerate(_kern_to_xy(kern, True)):
                             aName = f"{KERN_TOP_RIGHT_ANCHOR}.{i}"
-                            layer.anchors[aName] = GSAnchor()
-                            layer.anchors[aName].position = (
-                                x.Value + layer.width,
-                                y.Value,
-                            )
+                            layer.anchors[aName] = GSAnchor("", (x + layer.width, y))
+
                     if kern := value.BottomRightMathKern:
-                        heights = [_valueRecord(0)] + kern.CorrectionHeight
-                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                        for i, (x, y) in enumerate(_kern_to_xy(kern, False)):
                             aName = f"{KERN_BOTTOM_RIGHT_ANCHOR}.{i}"
-                            layer.anchors[aName] = GSAnchor()
-                            layer.anchors[aName].position = (
-                                x.Value + layer.width,
-                                y.Value,
-                            )
+                            layer.anchors[aName] = GSAnchor("", (x + layer.width, y))
 
                     if kern := value.TopLeftMathKern:
-                        heights = kern.CorrectionHeight + [
-                            table.MathConstants.SuperscriptBottomMaxWithSubscript
-                        ]
-                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                        for i, (x, y) in enumerate(_kern_to_xy(kern, True)):
                             aName = f"{KERN_TOP_LEFT_ANCHOR}.{i}"
-                            layer.anchors[aName] = GSAnchor()
-                            layer.anchors[aName].position = (-x.Value, y.Value)
+                            layer.anchors[aName] = GSAnchor("", (-x, y))
 
                     if kern := value.BottomLeftMathKern:
-                        heights = [_valueRecord(0)] + kern.CorrectionHeight
-                        for i, (x, y) in enumerate(zip(kern.KernValue, heights)):
+                        for i, (x, y) in enumerate(_kern_to_xy(kern, False)):
                             aName = f"{KERN_BOTTOM_LEFT_ANCHOR}.{i}"
-                            layer.anchors[aName] = GSAnchor()
-                            layer.anchors[aName].position = (-x.Value, y.Value)
+                            layer.anchors[aName] = GSAnchor("", (-x, y))
 
         if variants := table.MathVariants:
             constants["MinConnectorOverlap"] = variants.MinConnectorOverlap
