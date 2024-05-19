@@ -777,37 +777,22 @@ class ConstantsWindow:
                 )
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
-                box.addAutoPosSizeRules(
-                    [
-                        "H:[label]-[edit(40)]-[button(24)]",
-                        "V:|[button]|",
-                    ]
-                )
-                constraints = []
-                constraints.append(
-                    box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
-                        box.button._nsObject.centerYAnchor()
-                    )
-                )
-                constraints.append(
-                    box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(
-                        box.button._nsObject.centerYAnchor()
-                    )
-                )
-                constraint = box.label._nsObject.leadingAnchor().constraintGreaterThanOrEqualToAnchor_constant_(
-                    box._nsObject.leadingAnchor(), 20
-                )
-                constraint.setPriority_(500)
-                box.label._nsObject.setContentHuggingPriority_forOrientation_(
-                    499, AppKit.NSLayoutConstraintOrientationHorizontal
-                )
-                constraints.append(constraint)
-                constraints.append(
-                    box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(
-                        box._nsObject.centerXAnchor()
-                    )
-                )
-                AppKit.NSLayoutConstraint.activateConstraints_(constraints)
+                box.addAutoPosSizeRules([
+                    "H:[label]-[edit(40)]-[button(24)]",
+                    "V:|[button]|",
+                ])
+                box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                    box.button._nsObject.centerYAnchor()
+                ).setActive_(True)
+
+                box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                    box.button._nsObject.centerYAnchor()
+                ).setActive_(True)
+
+                box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(
+                    box._nsObject.centerXAnchor()
+                ).setActive_(True)
+
                 rules.append(f"H:|[{c}]|")
                 setattr(tab, f"{c}", box)
             tab.addAutoPosSizeRules(rules)
