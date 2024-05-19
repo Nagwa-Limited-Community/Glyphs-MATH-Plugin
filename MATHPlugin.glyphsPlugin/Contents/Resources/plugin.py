@@ -286,7 +286,7 @@ class VariantsWindow:
             title,
         )
         window.tabs = vanilla.Tabs(
-            (10, 10, -10, -10),
+            "auto",
             [NSLocalizedString("Vertical", ""), NSLocalizedString("Horizontal", "")],
         )
 
@@ -360,6 +360,12 @@ class VariantsWindow:
                 "H:|-[prevNext]-|",
             ]
             tab.addAutoPosSizeRules(rules)
+
+        rules = [
+            "V:|-[tabs]-|",
+            "H:|-[tabs]-|",
+        ]
+        window.addAutoPosSizeRules(rules)
 
         if varData := glyph.userData[VARIANTS_ID]:
             if vVars := varData.get(V_VARIANTS_ID):
@@ -741,7 +747,7 @@ class ConstantsWindow:
         sFormatter.setMinimum_(-0x7FFF)
         sFormatter.setMaximum_(0x7FFF)
 
-        window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
+        window.tabs = vanilla.Tabs("auto", tabs.keys())
         for i, name in enumerate(tabs.keys()):
             tab = window.tabs[i]
             rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
@@ -804,6 +810,12 @@ class ConstantsWindow:
                 rules.append(f"H:|[{c}]|")
                 setattr(tab, f"{c}", box)
             tab.addAutoPosSizeRules(rules)
+
+        rules = [
+            "V:|-[tabs]-|",
+            "H:|-[tabs]-|",
+        ]
+        window.addAutoPosSizeRules(rules)
 
     def open(self):
         self.window.open()
