@@ -1646,7 +1646,7 @@ class MATHPlugin(GeneralPlugin):
             path = info["fontFilePath"]
 
             if not instance.font.tempData[STATUS_ID]:
-                _message(f"Export failed:\nloading math data failed")
+                _message("Export failed:\nloading math data failed")
                 return
 
             font = instance.interpolatedFont
