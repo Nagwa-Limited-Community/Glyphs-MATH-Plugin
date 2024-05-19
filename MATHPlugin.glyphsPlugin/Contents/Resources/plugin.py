@@ -293,34 +293,23 @@ class VariantsWindow:
         self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
-            vBox = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
-            vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
-            vButton.getNSButton().setTag_(i)
-            setattr(self, f"vButton{i}", vButton)
-            tab.vStack = vanilla.HorizontalStackView(
-                "auto", [{"view": vBox}, {"view": vButton, "width": 24}]
-            )
+            tab.vLabel = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
+            tab.vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
+            tab.vButton.getNSButton().setTag_(i)
 
             tab.vEdit = vanilla.EditText(
                 "auto", continuous=False, callback=self.editTextCallback
             )
             tab.vEdit.getNSTextField().setTag_(i)
 
-            aBox = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
-            aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
-            aButton.getNSButton().setTag_(i)
-            setattr(self, f"aButton{i}", aButton)
-            tab.aStack = vanilla.HorizontalStackView(
-                "auto", [{"view": aBox}, {"view": aButton, "width": 24}]
-            )
+            tab.aLabel = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
+            tab.aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
+            tab.aButton.getNSButton().setTag_(i)
 
-            prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
-            next = vanilla.Button("auto", "➡️", callback=self.nextCallback)
-            prev.bind("[", ["command"])
-            next.bind("]", ["command"])
-            setattr(self, f"prev{i}", prev)
-            setattr(self, f"next{i}", next)
-            tab.prevNext = vanilla.HorizontalStackView("auto", [prev, next])
+            tab.prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
+            tab.next = vanilla.Button("auto", "➡️", callback=self.nextCallback)
+            tab.prev.bind("[", ["command"])
+            tab.next.bind("]", ["command"])
 
             tab.aList = vanilla.List(
                 "auto",
@@ -350,15 +339,27 @@ class VariantsWindow:
             )
             tab.check.show(i == 0)
 
-            rules = [
-                "V:|-[vStack]-[vEdit(40)]-[aStack]-[aList]-[check]-[prevNext]-|",
-                f"H:|-[vStack({width})]-|",
-                "H:|-[vEdit]-|",
-                f"H:|-[aStack({width})]-|",
+            if i == 0:
+                rules = [
+                    "V:[aList]-[check(22)]-4-[prev]-|",
+                    "V:[check]-4-[next]",
+                    "H:|-[check]-|"
+                ]
+            else:
+                rules = [
+                    "V:[aList]-[prev]-|",
+                    "V:[aList]-[next]"
+                ]
+            rules.extend([
+                "V:|[vButton]-6-[vEdit(40)]-[aButton]-6-[aList]",
+                "V:[vLabel]-6-[vEdit]",
+                "H:|-[vLabel]-[vButton(26)]-|",
+                f"H:|-[vEdit({width})]-|",
+                "H:|-[aLabel]-[aButton(26)]-|",
+                "V:[aLabel]-6-[aList]",
                 "H:|-[aList]-|",
-                "H:|-[check]-|",
-                "H:|-[prevNext]-|",
-            ]
+                "H:|-[prev]-4-[next(==prev)]-|",
+            ])
             tab.addAutoPosSizeRules(rules)
 
         rules = [
