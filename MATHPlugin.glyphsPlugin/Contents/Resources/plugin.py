@@ -782,7 +782,7 @@ class ConstantsWindow:
 
                 box.addAutoPosSizeRules(
                     [
-                        "H:[label]-[edit(40)]-[button(24)]",
+                        "H:[label]-[edit(60)]-[button(24)]",
                         "V:|[button]|",
                     ]
                 )
