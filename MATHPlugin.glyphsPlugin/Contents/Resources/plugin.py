@@ -294,7 +294,9 @@ class VariantsWindow:
 
         for i, tab in enumerate(window.tabs):
             tab.vLabel = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
-            tab.vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
+            tab.vButton = vanilla.Button(
+                "auto", "🪄", callback=self.guessVariantsCallback
+            )
             tab.vButton.getNSButton().setTag_(i)
 
             tab.vEdit = vanilla.EditText(
@@ -303,7 +305,9 @@ class VariantsWindow:
             tab.vEdit.getNSTextField().setTag_(i)
 
             tab.aLabel = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
-            tab.aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
+            tab.aButton = vanilla.Button(
+                "auto", "🪄", callback=self.guessAssemblyCallback
+            )
             tab.aButton.getNSButton().setTag_(i)
 
             tab.prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
@@ -343,23 +347,22 @@ class VariantsWindow:
                 rules = [
                     "V:[aList]-[check(22)]-4-[prev]-|",
                     "V:[check]-4-[next]",
-                    "H:|-[check]-|"
+                    "H:|-[check]-|",
                 ]
             else:
-                rules = [
-                    "V:[aList]-[prev]-|",
-                    "V:[aList]-[next]"
+                rules = ["V:[aList]-[prev]-|", "V:[aList]-[next]"]
+            rules.extend(
+                [
+                    "V:|[vButton]-6-[vEdit(40)]-[aButton]-6-[aList]",
+                    "V:[vLabel]-6-[vEdit]",
+                    "H:|-[vLabel]-[vButton(26)]-|",
+                    f"H:|-[vEdit({width})]-|",
+                    "H:|-[aLabel]-[aButton(26)]-|",
+                    "V:[aLabel]-6-[aList]",
+                    "H:|-[aList]-|",
+                    "H:|-[prev]-4-[next(==prev)]-|",
                 ]
-            rules.extend([
-                "V:|[vButton]-6-[vEdit(40)]-[aButton]-6-[aList]",
-                "V:[vLabel]-6-[vEdit]",
-                "H:|-[vLabel]-[vButton(26)]-|",
-                f"H:|-[vEdit({width})]-|",
-                "H:|-[aLabel]-[aButton(26)]-|",
-                "V:[aLabel]-6-[aList]",
-                "H:|-[aList]-|",
-                "H:|-[prev]-4-[next(==prev)]-|",
-            ])
+            )
             tab.addAutoPosSizeRules(rules)
 
         rules = [
@@ -777,10 +780,12 @@ class ConstantsWindow:
                 )
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
-                box.addAutoPosSizeRules([
-                    "H:[label]-[edit(40)]-[button(24)]",
-                    "V:|[button]|",
-                ])
+                box.addAutoPosSizeRules(
+                    [
+                        "H:[label]-[edit(40)]-[button(24)]",
+                        "V:|[button]|",
+                    ]
+                )
                 box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
                     box.button._nsObject.centerYAnchor()
                 ).setActive_(True)
