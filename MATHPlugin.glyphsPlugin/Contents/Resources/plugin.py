@@ -767,8 +767,8 @@ class ConstantsWindow:
                     formatter=uFormatter if c in CONSTANT_UNSIGNED else sFormatter,
                     placeholder="0",
                 )
+                box.edit.setToolTip(MATH_CONSTANTS_TOOLTIPS[c])
                 box.edit.getNSTextField().setTag_(MATH_CONSTANTS.index(c))
-                box.edit.getNSTextField().setToolTip_(MATH_CONSTANTS_TOOLTIPS[c])
 
                 box.button = vanilla.Button(
                     "auto",
