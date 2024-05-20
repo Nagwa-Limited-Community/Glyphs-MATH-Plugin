@@ -286,41 +286,30 @@ class VariantsWindow:
             title,
         )
         window.tabs = vanilla.Tabs(
-            (10, 10, -10, -10),
+            "auto",
             [NSLocalizedString("Vertical", ""), NSLocalizedString("Horizontal", "")],
         )
 
         self.emptyRow = {"g": "", "s": 0, "e": 0, "f": False}
 
         for i, tab in enumerate(window.tabs):
-            vBox = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
-            vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
-            vButton.getNSButton().setTag_(i)
-            setattr(self, f"vButton{i}", vButton)
-            tab.vStack = vanilla.HorizontalStackView(
-                "auto", [{"view": vBox}, {"view": vButton, "width": 24}]
-            )
+            tab.vLabel = vanilla.TextBox("auto", NSLocalizedString("Variants:", ""))
+            tab.vButton = vanilla.Button("auto", "🪄", callback=self.guessVariantsCallback)
+            tab.vButton.getNSButton().setTag_(i)
 
             tab.vEdit = vanilla.EditText(
                 "auto", continuous=False, callback=self.editTextCallback
             )
             tab.vEdit.getNSTextField().setTag_(i)
 
-            aBox = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
-            aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
-            aButton.getNSButton().setTag_(i)
-            setattr(self, f"aButton{i}", aButton)
-            tab.aStack = vanilla.HorizontalStackView(
-                "auto", [{"view": aBox}, {"view": aButton, "width": 24}]
-            )
+            tab.aLabel = vanilla.TextBox("auto", NSLocalizedString("Assembly:", ""))
+            tab.aButton = vanilla.Button("auto", "🪄", callback=self.guessAssemblyCallback)
+            tab.aButton.getNSButton().setTag_(i)
 
-            prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
-            next = vanilla.Button("auto", "➡️", callback=self.nextCallback)
-            prev.bind("[", ["command"])
-            next.bind("]", ["command"])
-            setattr(self, f"prev{i}", prev)
-            setattr(self, f"next{i}", next)
-            tab.prevNext = vanilla.HorizontalStackView("auto", [prev, next])
+            tab.prev = vanilla.Button("auto", "⬅️", callback=self.prevCallback)
+            tab.next = vanilla.Button("auto", "➡️", callback=self.nextCallback)
+            tab.prev.bind("[", ["command"])
+            tab.next.bind("]", ["command"])
 
             tab.aList = vanilla.List(
                 "auto",
@@ -350,16 +339,34 @@ class VariantsWindow:
             )
             tab.check.show(i == 0)
 
-            rules = [
-                "V:|-[vStack]-[vEdit(40)]-[aStack]-[aList]-[check]-[prevNext]-|",
-                f"H:|-[vStack({width})]-|",
-                "H:|-[vEdit]-|",
-                f"H:|-[aStack({width})]-|",
+            if i == 0:
+                rules = [
+                    "V:[aList]-[check(22)]-4-[prev]-|",
+                    "V:[check]-4-[next]",
+                    "H:|-[check]-|"
+                ]
+            else:
+                rules = [
+                    "V:[aList]-[prev]-|",
+                    "V:[aList]-[next]"
+                ]
+            rules.extend([
+                "V:|[vButton]-6-[vEdit(40)]-[aButton]-6-[aList]",
+                "V:[vLabel]-6-[vEdit]",
+                "H:|-[vLabel]-[vButton(26)]-|",
+                f"H:|-[vEdit({width})]-|",
+                "H:|-[aLabel]-[aButton(26)]-|",
+                "V:[aLabel]-6-[aList]",
                 "H:|-[aList]-|",
-                "H:|-[check]-|",
-                "H:|-[prevNext]-|",
-            ]
+                "H:|-[prev]-4-[next(==prev)]-|",
+            ])
             tab.addAutoPosSizeRules(rules)
+
+        rules = [
+            "V:|-[tabs]-|",
+            "H:|-[tabs]-|",
+        ]
+        window.addAutoPosSizeRules(rules)
 
         if varData := glyph.userData[VARIANTS_ID]:
             if vVars := varData.get(V_VARIANTS_ID):
@@ -741,7 +748,7 @@ class ConstantsWindow:
         sFormatter.setMinimum_(-0x7FFF)
         sFormatter.setMaximum_(0x7FFF)
 
-        window.tabs = vanilla.Tabs((10, 10, -10, -10), tabs.keys())
+        window.tabs = vanilla.Tabs("auto", tabs.keys())
         for i, name in enumerate(tabs.keys()):
             tab = window.tabs[i]
             rules = ["V:|" + "".join(f"[{c}]" for c in tabs[name]) + "|"]
@@ -770,40 +777,31 @@ class ConstantsWindow:
                 )
                 box.button.getNSButton().setTag_(MATH_CONSTANTS.index(c))
 
-                box.addAutoPosSizeRules(
-                    [
-                        "H:[label]-[edit(40)]-[button(24)]",
-                        "V:|[button]|",
-                    ]
-                )
-                constraints = []
-                constraints.append(
-                    box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
-                        box.button._nsObject.centerYAnchor()
-                    )
-                )
-                constraints.append(
-                    box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(
-                        box.button._nsObject.centerYAnchor()
-                    )
-                )
-                constraint = box.label._nsObject.leadingAnchor().constraintGreaterThanOrEqualToAnchor_constant_(
-                    box._nsObject.leadingAnchor(), 20
-                )
-                constraint.setPriority_(500)
-                box.label._nsObject.setContentHuggingPriority_forOrientation_(
-                    499, AppKit.NSLayoutConstraintOrientationHorizontal
-                )
-                constraints.append(constraint)
-                constraints.append(
-                    box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(
-                        box._nsObject.centerXAnchor()
-                    )
-                )
-                AppKit.NSLayoutConstraint.activateConstraints_(constraints)
+                box.addAutoPosSizeRules([
+                    "H:[label]-[edit(40)]-[button(24)]",
+                    "V:|[button]|",
+                ])
+                box.label._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                    box.button._nsObject.centerYAnchor()
+                ).setActive_(True)
+
+                box.edit._nsObject.centerYAnchor().constraintEqualToAnchor_(
+                    box.button._nsObject.centerYAnchor()
+                ).setActive_(True)
+
+                box.edit._nsObject.centerXAnchor().constraintEqualToAnchor_(
+                    box._nsObject.centerXAnchor()
+                ).setActive_(True)
+
                 rules.append(f"H:|[{c}]|")
                 setattr(tab, f"{c}", box)
             tab.addAutoPosSizeRules(rules)
+
+        rules = [
+            "V:|-[tabs]-|",
+            "H:|-[tabs]-|",
+        ]
+        window.addAutoPosSizeRules(rules)
 
     def open(self):
         self.window.open()
@@ -1648,7 +1646,7 @@ class MATHPlugin(GeneralPlugin):
             path = info["fontFilePath"]
 
             if not instance.font.tempData[STATUS_ID]:
-                _message(f"Export failed:\nloading math data failed")
+                _message("Export failed:\nloading math data failed")
                 return
 
             font = instance.interpolatedFont
