@@ -16,6 +16,10 @@ Glyphs should be restarted as well to use the new version).
 Usage
 -----
 
+Below is a quick reference for using the plug-in. For a more in depth
+documentation about building math fonts using this plug-in, see the
+[Building OpenType math fonts][1] article.
+
 The plug-in adds some new menu entries:
 * _Edit → Edit MATH Constants..._ for editing font-level MATH table constants.
   The constants are saved per-master and should be edited for each master.
@@ -47,3 +51,5 @@ The plug-in adds some new menu entries:
 
 If the font contains any MATH data, the plug-in will generate MATH table when
 the font is exported, no extra steps are needed.
+
+[1]: https://github.com/notofonts/math/blob/main/documentation/building-math-fonts/index.md
