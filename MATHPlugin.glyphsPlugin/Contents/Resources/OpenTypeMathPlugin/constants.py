@@ -4,6 +4,7 @@ NAME = "OpenType MATH Plug-in"
 
 PLUGIN_ID = "com.nagwa.MATHPlugin"
 CONSTANTS_ID = PLUGIN_ID + ".constants"
+SKIP_EXPORT_ID = PLUGIN_ID + ".skipExport"
 STATUS_ID = PLUGIN_ID + ".status"
 
 EXTENDED_SHAPE_ID = PLUGIN_ID + ".extendedShape"

@@ -32,6 +32,7 @@ from OpenTypeMathPlugin.constants import (
     MATH_CONSTANTS,
     NAME,
     PLUGIN_ID,
+    SKIP_EXPORT_ID,
     STATUS_ID,
     TOP_ACCENT_ANCHOR,
     H_ASSEMBLY_ID,
@@ -53,7 +54,13 @@ class MATHPlugin(GeneralPlugin):
     def start(self):
         self.defaults = Glyphs.defaults
 
-        Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
+        if self.defaults.get(SKIP_EXPORT_ID):
+            self.notification_(
+                "MATHPlugin export is disabled. "
+                'Set Glyphs.defaults["com.nagwa.MATHPlugin.skipExport"] to False to enable it.'
+            )
+        else:
+            Glyphs.addCallback(self.export_, DOCUMENTEXPORTED)
         Glyphs.addCallback(self.open_, DOCUMENTOPENED)
         Glyphs.addCallback(self.draw_, DRAWBACKGROUND)
         GSCallbackHandler.addCallback_forOperation_(self, "GSPrepareLayerCallback")
@@ -103,7 +110,8 @@ class MATHPlugin(GeneralPlugin):
 
     @objc.python_method
     def __del__(self):
-        Glyphs.removeCallback(self.export_)
+        if not self.defaults.get(SKIP_EXPORT_ID):
+            Glyphs.removeCallback(self.export_)
         Glyphs.removeCallback(self.open_)
         Glyphs.removeCallback(self.draw_)
 
@@ -221,7 +229,9 @@ class MATHPlugin(GeneralPlugin):
                     assembly = layerData.get(H_ASSEMBLY_ID, []) if showGA else []
                     variants = glyphData.get(H_VARIANTS_ID, []) if showGV else []
                     if assembly or variants:
-                        MathDrawing.drawVariants(variants, assembly, layer, scale, False)
+                        MathDrawing.drawVariants(
+                            variants, assembly, layer, scale, False
+                        )
         except:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
