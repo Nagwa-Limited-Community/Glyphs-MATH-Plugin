@@ -134,6 +134,9 @@ class MathDrawing:
             save()
             translate(x, y)
             variantLayer = gl(variant).layers[layer.layerId]
+            if variantLayer is None:
+                continue
+
             path = variantLayer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
@@ -162,6 +165,8 @@ class MathDrawing:
             save()
             translate(x, y)
             partLayer = gl(gRef).layers[layer.layerId]
+            if partLayer is None:
+                continue
             path = partLayer.completeBezierPath
             path.setLineWidth_(width)
             path.stroke()
@@ -196,6 +201,9 @@ class MathDrawing:
             prev = end
 
             partLayer = gl(gRef).layers[layer.layerId]
+            if partLayer is None:
+                continue
+
             w, h = _getMetrics(partLayer)
             if vertical:
                 y -= overlap
