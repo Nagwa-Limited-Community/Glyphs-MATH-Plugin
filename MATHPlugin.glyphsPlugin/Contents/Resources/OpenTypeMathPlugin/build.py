@@ -80,14 +80,14 @@ class MathTableBuilder:
             name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vVars := varData.get(V_VARIANTS_ID):
-                vVars = [str(n) for n in vVars]
+                vVars = [productionMap[str(n)] for n in vVars]
                 vVariants[name] = [
                     (n, _bboxHeight(font.glyphs[n].layers[0])) for n in vVars
                 ]
                 if glyph.userData[EXTENDED_SHAPE_ID]:
                     extended.update(str(v) for v in vVars)
             if hVars := varData.get(H_VARIANTS_ID):
-                hVars = [str(n) for n in hVars]
+                hVars = [productionMap[str(n)] for n in hVars]
                 hVariants[name] = [
                     (n, _bboxWidth(font.glyphs[n].layers[0])) for n in hVars
                 ]
@@ -97,7 +97,11 @@ class MathTableBuilder:
             if vAssembly := varData.get(V_ASSEMBLY_ID):
                 vAssemblies[name] = [
                     [
-                        (str(part[0]), *part[1:], _bboxHeight(part[0].glyph.layers[0]))
+                        (
+                            productionMap[str(part[0])],
+                            *part[1:],
+                            _bboxHeight(part[0].glyph.layers[0]),
+                        )
                         for part in vAssembly
                     ],
                     italic.pop(str(vAssembly[-1][0]), 0),
@@ -105,7 +109,11 @@ class MathTableBuilder:
             if hAssembly := varData.get(H_ASSEMBLY_ID):
                 hAssemblies[name] = [
                     [
-                        (str(part[0]), *part[1:], _bboxWidth(part[0].glyph.layers[0]))
+                        (
+                            productionMap[str(part[0])],
+                            *part[1:],
+                            _bboxWidth(part[0].glyph.layers[0]),
+                        )
                         for part in hAssembly
                     ],
                     italic.pop(str(hAssembly[-1][0]), 0),
