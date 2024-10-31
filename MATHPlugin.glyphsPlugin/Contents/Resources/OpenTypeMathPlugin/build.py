@@ -121,7 +121,7 @@ class MathTableBuilder:
 
         if not any(
             [
-                constants,
+                *constants.values(),
                 italic,
                 accent,
                 vVariants,
