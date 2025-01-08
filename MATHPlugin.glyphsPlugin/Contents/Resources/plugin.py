@@ -535,12 +535,16 @@ class MATHPlugin(GeneralPlugin):
         # Interpolate math constants
         constants = {}
         for c in MATH_CONSTANTS:
-            value = 0
+            value = None
             for masterId, factor in interpolation.items():
                 userData = font.masters[masterId].userData.get(CONSTANTS_ID, {})
                 if v := userData.get(c):
+                    if value is None:
+                        value = 0
                     value += v * factor
-            constants[c] = round(value)
-        master.userData[CONSTANTS_ID] = dict(constants)
+            if value is not None:
+                constants[c] = round(value)
+        if constants:
+            master.userData[CONSTANTS_ID] = constants
 
         return (True, None)
