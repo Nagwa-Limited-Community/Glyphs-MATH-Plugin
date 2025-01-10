@@ -50,7 +50,7 @@
 "Show MATH Assembly" = "Zeige MATH Zusammenstellung";
 
 /* No comment provided by engineer. */
-"Show MATH Cut-ins" = "Zeige MATH Obere Akzent Position";
+"Show MATH Cut-ins" = "Zeige MATH Einschnitte";
 
 /* No comment provided by engineer. */
 "Show MATH Italic Correction" = "Zeige MATH Italic Verbindung";
@@ -59,7 +59,7 @@
 "Show MATH Top Accent Position" = "Zeige MATH Obere Akzent Position";
 
 /* No comment provided by engineer. */
-"Show MATH Variants" = "Zeige MATH Obere Akzent Position";
+"Show MATH Variants" = "Zeige MATH Varianten";
 
 /* No comment provided by engineer. */
 "Stacks" = "Stapelung";
