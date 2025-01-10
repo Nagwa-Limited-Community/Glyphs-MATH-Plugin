@@ -80,12 +80,12 @@ class MathTableBuilder:
             name = productionMap[glyph.name]
             varData = glyph.userData.get(VARIANTS_ID, {})
             if vVars := varData.get(V_VARIANTS_ID):
-                vVars = [productionMap[str(n)] for n in vVars]
                 vVariants[name] = [
-                    (n, _bboxHeight(font.glyphs[n].layers[0])) for n in vVars
+                    (productionMap[str(n)], _bboxHeight(font.glyphs[str(n)].layers[0])) for n in vVars
                 ]
                 if glyph.userData[EXTENDED_SHAPE_ID]:
-                    extended.update(str(v) for v in vVars)
+                    productionVVars = [productionMap[str(n)] for n in vVars]
+                    extended.update(productionVVars)
             if hVars := varData.get(H_VARIANTS_ID):
                 hVars = [productionMap[str(n)] for n in hVars]
                 hVariants[name] = [
