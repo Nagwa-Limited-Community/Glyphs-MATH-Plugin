@@ -163,7 +163,7 @@ class VariantsWindow:
     def glyphRef(self, name):
         try:
             return GSGlyphReference(self.glyph.parent.glyphs[name])
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def openGlyph(self, glyph):
@@ -182,7 +182,7 @@ class VariantsWindow:
             index = glyphOrder.index(self.glyph.name)
             if index < len(glyphOrder) - 1:
                 self.openGlyph(font.glyphs[index + 1])
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def prevCallback(self, sender):
@@ -192,7 +192,7 @@ class VariantsWindow:
             index = glyphOrder.index(self.glyph.name)
             if index > 0:
                 self.openGlyph(font.glyphs[index - 1])
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def guessVariantsCallback(self, sender):
@@ -225,7 +225,7 @@ class VariantsWindow:
                     tab.vEdit.set(" ".join([name] + variants))
                     self.editTextCallback(tab.vEdit)
                     return
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def guessAssembly(self, vertical):
@@ -233,7 +233,7 @@ class VariantsWindow:
         font = glyph.parent
         name = glyph.name
 
-        for l, r, t, b, m, e in [
+        for l, r, t, b, m, e in [  # noqa: E741
             ["lft", "rgt", "top", "bot", "mid", "ext"],
             ["left", "right", "top", "bottom", "middle", "extension"],
             ["l", "r", "t", "b", "m", "x"],
@@ -351,12 +351,14 @@ class VariantsWindow:
                         ]
                         # Find lines at top and bottom
                         starts = [
-                            l for l in lines if l.origin.y == layer.bounds.origin.y
+                            line
+                            for line in lines
+                            if line.origin.y == layer.bounds.origin.y
                         ]
                         ends = [
-                            l
-                            for l in lines
-                            if (l.origin.y + l.size.height)
+                            line
+                            for line in lines
+                            if (line.origin.y + line.size.height)
                             == (layer.bounds.origin.y + layer.bounds.size.height)
                         ]
                         if i != 0 and len(starts) and (len(starts) % 2) == 0:
@@ -373,12 +375,14 @@ class VariantsWindow:
                         ]
                         # Find lines at left and right
                         starts = [
-                            l for l in lines if l.origin.x == layer.bounds.origin.x
+                            line
+                            for line in lines
+                            if line.origin.x == layer.bounds.origin.x
                         ]
                         ends = [
-                            l
-                            for l in lines
-                            if (l.origin.x + l.size.width)
+                            line
+                            for line in lines
+                            if (line.origin.x + line.size.width)
                             == (layer.bounds.origin.x + layer.bounds.size.width)
                         ]
                         if i != 0 and len(starts) and (len(starts) % 2) == 0:
@@ -390,7 +394,7 @@ class VariantsWindow:
             tab.aList.set(items)
             self.listEditCallback(tab.aList)
             return
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def editTextCallback(self, sender):
@@ -416,7 +420,7 @@ class VariantsWindow:
                 glyph.userData[VARIANTS_ID] = dict(varData)
             elif VARIANTS_ID in glyph.userData:
                 del glyph.userData[VARIANTS_ID]
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def listEditCallback(self, sender):
@@ -445,7 +449,7 @@ class VariantsWindow:
             elif assemblyId in varData:
                 del varData[assemblyId]
             layer.userData[VARIANTS_ID] = dict(varData)
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def listDoubleClickCallback(self, sender):
@@ -459,7 +463,7 @@ class VariantsWindow:
                 sender.set(items)
                 row = len(items) - 1
             table._startEditingColumn_row_event_(column, row, None)
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
     def checkBoxCallback(self, sender):
@@ -468,7 +472,7 @@ class VariantsWindow:
             glyph.userData[EXTENDED_SHAPE_ID] = sender.get()
             if not sender.get():
                 del glyph.userData[EXTENDED_SHAPE_ID]
-        except:
+        except Exception:
             _message(traceback.format_exc())
 
 

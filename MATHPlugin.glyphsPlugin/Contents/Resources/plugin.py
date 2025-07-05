@@ -191,7 +191,7 @@ class MATHPlugin(GeneralPlugin):
             master = Glyphs.font.selectedFontMaster
             window = ConstantsWindow(master)
             window.open()
-        except:
+        except Exception:
             _message(f"Editing failed:\n{traceback.format_exc()}")
 
     def editGlyph_(self, menuItem):
@@ -199,7 +199,7 @@ class MATHPlugin(GeneralPlugin):
             layer = Glyphs.font.selectedLayers[0]
             window = VariantsWindow(layer)
             window.open()
-        except:
+        except Exception:
             _message(f"Editing failed:\n{traceback.format_exc()}")
 
     @objc.python_method
@@ -232,7 +232,7 @@ class MATHPlugin(GeneralPlugin):
                         MathDrawing.drawVariants(
                             variants, assembly, layer, scale, False
                         )
-        except:
+        except Exception:
             _message(f"Drawing MATH data failed:\n{traceback.format_exc()}")
 
     @objc.python_method
@@ -250,7 +250,7 @@ class MATHPlugin(GeneralPlugin):
                     lazy=True,
                     recalcBBoxes=False,
                 )
-            except Exception as ex:
+            except Exception:
                 pass
             else:
                 try:
@@ -303,7 +303,7 @@ class MATHPlugin(GeneralPlugin):
             font.tempData[STATUS_ID] = True
         except AppKit.MPMissingGlyph as e:
             _message(f"Opening failed:\n{e}")
-        except:
+        except Exception:
             _message(f"Opening failed:\n{traceback.format_exc()}")
 
     @staticmethod
@@ -489,7 +489,7 @@ class MATHPlugin(GeneralPlugin):
                 if "MATH" in ttFont:
                     ttFont.save(path)
                     self.notification_("MATH table exported successfully")
-        except:
+        except Exception:
             _message(f"Export failed:\n{traceback.format_exc()}")
 
     @objc.typedSelector(b"c32@:@@@o^@")
