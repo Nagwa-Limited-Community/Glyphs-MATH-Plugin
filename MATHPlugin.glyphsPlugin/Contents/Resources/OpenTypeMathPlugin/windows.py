@@ -236,6 +236,7 @@ class VariantsWindow:
         for l, r, t, b, m, e in [  # noqa: E741
             ["lft", "rgt", "top", "bot", "mid", "ext"],
             ["left", "right", "top", "bottom", "middle", "extension"],
+            ["lt", "rt", "tp", "bt", "md", "ex"],
             ["l", "r", "t", "b", "m", "x"],
         ]:
             if (ext := font.glyphs[f"{name}.{e}"]) is None:
