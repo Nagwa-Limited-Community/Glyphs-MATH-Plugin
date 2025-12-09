@@ -19,6 +19,9 @@ from OpenTypeMathPlugin.helpers import _bboxHeight, _bboxWidth
 class MathTableBuilder:
     @staticmethod
     def buildMathTable(font, ttFont):
+        if not font:
+            return
+
         instance = font.instances[0]
         master = font.masters[0]
 
